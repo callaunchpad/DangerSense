@@ -1,0 +1,4 @@
+Some cool papers:
+-https://arxiv.org/pdf/1801.02805.pdf (deep RL enabling a car to avoid traffic, has a cool simulation as well at https://selfdrivingcars.mit.edu/deeptraffic/ that we will probably build off of)
+-https://pjreddie.com/media/files/papers/yolo.pdf (describes a widely-used object detection network called YOLOnet, don’t worry about understanding the CNN architecture fully yet)
+-https://www.sciencedirect.com/science/article/pii/S0020025517308848 (something that we could try: essentially a better object detection algorithm that also estimates things like distance to impact)
