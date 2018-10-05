@@ -57,15 +57,18 @@ class darkflow_prediction():
 		self.video = cv2.VideoCapture(video_file)
 		skip_frames = 0
 		t = time.time()
-		while self.video.isOpened():
-			for i in range(skip_frames):
-				_, _ = self.video.read()
-			ret, self.image = self.video.read()
-			self.result = self.tfnet.return_predict(self.image)
-			self.print_box()
-			cv2.waitKey(1)
-			skip_frames = int((time.time()-t)*FPS)
-			t = time.time()
+		try:
+			while self.video.isOpened():
+				for i in range(skip_frames):
+					_, _ = self.video.read()
+				ret, self.image = self.video.read()
+				self.result = self.tfnet.return_predict(self.image)
+				self.print_box()
+				cv2.waitKey(1)
+				skip_frames = int((time.time()-t)*FPS)
+				t = time.time()
+		except AssertionError:
+			pass
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
