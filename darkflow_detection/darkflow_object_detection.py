@@ -23,7 +23,7 @@ import re
 class darkflow_prediction():
 
 	def __init__(self):
-		self.options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.1}
+		self.options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.5}
 		self.tfnet = TFNet(self.options)
 
 	def image(self, image_file):
