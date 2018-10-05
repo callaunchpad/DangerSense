@@ -52,7 +52,6 @@ class darkflow_prediction():
 		cv2.imshow("memes", self.image)
 
 	def video(self, video_file):
-		print("here")
 		self.video = cv2.VideoCapture(video_file)
 		while self.video.isOpened():
 			ret, self.image = self.video.read()
