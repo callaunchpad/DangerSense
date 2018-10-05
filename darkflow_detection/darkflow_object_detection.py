@@ -27,6 +27,7 @@ class darkflow_prediction():
 		tfnet = TFNet(options)
 		self.image = cv2.imread(image_file, 1)
 		self.result = tfnet.return_predict(self.image)
+		print(self.result)
 		self.print_box()
 
 	def print_box(self):
@@ -41,4 +42,4 @@ class darkflow_prediction():
 			axis.add_patch(rect)
 		plt.show()
 
-pred = darkflow_prediction("../cars1.png")
+pred = darkflow_prediction("../cars2.jpg")
