@@ -31,12 +31,15 @@ class darkflow_prediction():
 		self.result = self.tfnet.return_predict(self.image)
 		print(self.result)
 		self.print_box()
+		cv2.waitKey(0)
 
 	def print_box(self):
+		font = cv2.FONT_HERSHEY_SIMPLEX
 		for i in range(len(self.result)):
 			coordtl = (self.result[i]['topleft']['x'], self.result[i]['topleft']['y'])
 			coordbr = (self.result[i]['bottomright']['x'], self.result[i]['bottomright']['y'])
 			cv2.rectangle(self.image,coordtl,coordbr,(0,255,0),2)
+			cv2.putText(self.image, self.result[i]['label'] + ": " + self.result[i]['confidence'], font, 1, (255,255,0))
 		cv2.imshow("memes", self.image)
 
 	def video(self, video_file):
