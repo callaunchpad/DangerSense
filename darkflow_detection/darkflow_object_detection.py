@@ -19,8 +19,10 @@ from keras.callbacks import EarlyStopping
 # from yolo_utils import *
 from darkflow.net.build import TFNet
 import re
+import time
 
 class darkflow_prediction():
+
 
 	def __init__(self):
 		self.options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.5}
@@ -34,7 +36,7 @@ class darkflow_prediction():
 		cv2.waitKey(0)
 
 	def print_box(self):
-		font = cv2.FONT_HERSHEY_SIMPLEX
+		font = cv2.FONT_HERSHEY_PLAIN
 		for i in range(len(self.result)):
 			coordtl = (self.result[i]['topleft']['x'], self.result[i]['topleft']['y'])
 			coordbr = (self.result[i]['bottomright']['x'], self.result[i]['bottomright']['y'])
@@ -50,7 +52,21 @@ class darkflow_prediction():
 			self.result = self.tfnet.return_predict(self.image)
 			self.print_box()
 			cv2.waitKey(1)
+	
+	def video_with_frame_drop(self, video_file, FPS=30):
+		self.video = cv2.VideoCapture(video_file)
+		skip_frames = 0
+		t = time.time()
+		while self.video.isOpened():
+			for i in range(skip_frames):
+				_, _ = self.video.read()
+			ret, self.image = self.video.read()
+			self.result = self.tfnet.return_predict(self.image)
+			self.print_box()
+			cv2.waitKey(1)
+			skip_frames = int((time.time()-t)*FPS)
+			t = time.time()
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../cars_video.mp4")
+pred.video_with_frame_drop("../cars_video.mp4")
