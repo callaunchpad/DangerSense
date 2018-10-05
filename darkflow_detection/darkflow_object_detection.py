@@ -32,12 +32,13 @@ class darkflow_prediction():
 	def print_box(self):
 		fig, axis = plt.subplots(1)
 		axis.imshow(self.image)
-		x_start = self.result[0]['topleft']['x']
-		y_start = self.result[0]['topleft']['y']
-		width = self.result[0]['bottomright']['x'] - x_start
-		height = self.result[0]['bottomright']['y'] - y_start
-		rect = patches.Rectangle((x_start, y_start), width, height, linewidth=1, edgecolor='r', facecolor='none')
-		axis.add_patch(rect)
+		for i in range(len(self.result)):
+			x_start = self.result[i]['topleft']['x']
+			y_start = self.result[i]['topleft']['y']
+			width = self.result[i]['bottomright']['x'] - x_start
+			height = self.result[i]['bottomright']['y'] - y_start
+			rect = patches.Rectangle((x_start, y_start), width, height, linewidth=1, edgecolor='r', facecolor='none')
+			axis.add_patch(rect)
 		plt.show()
 
-pred = darkflow_prediction("../cars3.jpg")
+pred = darkflow_prediction("../cars1.png")
