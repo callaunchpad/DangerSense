@@ -32,18 +32,6 @@ class darkflow_prediction():
 		print(self.result)
 		self.print_box()
 
-	# def print_box(self):
-	# 	fig, axis = plt.subplots(1)
-	# 	axis.imshow(self.image)
-	# 	for i in range(len(self.result)):
-	# 		x_start = self.result[i]['topleft']['x']
-	# 		y_start = self.result[i]['topleft']['y']
-	# 		width = self.result[i]['bottomright']['x'] - x_start
-	# 		height = self.result[i]['bottomright']['y'] - y_start
-	# 		rect = patches.Rectangle((x_start, y_start), width, height, linewidth=1, edgecolor='r', facecolor='none')
-	# 		axis.add_patch(rect)
-	# 	plt.show()
-
 	def print_box(self):
 		for i in range(len(self.result)):
 			coordtl = (self.result[i]['topleft']['x'], self.result[i]['topleft']['y'])
@@ -60,4 +48,5 @@ class darkflow_prediction():
 			cv2.waitKey(1)
 
 pred = darkflow_prediction()
+pred.image("../cars2.jpg")
 pred.video("../cars_video.mp4")
