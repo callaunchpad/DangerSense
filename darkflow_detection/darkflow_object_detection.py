@@ -42,7 +42,8 @@ class darkflow_prediction():
 			coordbr = (self.result[i]['bottomright']['x'], self.result[i]['bottomright']['y'])
 			cv2.rectangle(self.image,coordtl,coordbr,(0,255,0),2)
 			s = str(self.result[i]['label'] + ": " + str(self.result[i]['confidence']))
-			cv2.putText(self.image, s, coordbr, font, 1, (255,255,0))
+			text_coord = (coordtl[0], coordtl[1]-10)
+			cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
 		cv2.imshow("memes", self.image)
 
 	def video(self, video_file):
