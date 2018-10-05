@@ -23,22 +23,27 @@ import re
 class darkflow_prediction():
 
 	def __init__(self, image_file):
-		options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.1}
-		tfnet = TFNet(options)
+		options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.5}
+		self.tfnet = TFNet(options)
 		self.image = cv2.imread(image_file, 1)
-		self.result = tfnet.return_predict(self.image)
+		self.result = self.tfnet.return_predict(self.image)
+		print(self.result)
 		self.print_box()
 
 	def print_box(self):
-		fig, axis = plt.subplots(1)
-		axis.imshow(self.image)
 		for i in range(len(self.result)):
-			x_start = self.result[i]['topleft']['x']
-			y_start = self.result[i]['topleft']['y']
-			width = self.result[i]['bottomright']['x'] - x_start
-			height = self.result[i]['bottomright']['y'] - y_start
-			rect = patches.Rectangle((x_start, y_start), width, height, linewidth=1, edgecolor='r', facecolor='none')
-			axis.add_patch(rect)
-		plt.show()
+			coordtl = (self.result[i]['topleft']['x'], self.result[i]['topleft']['y'])
+			coordbr = (self.result[i]['bottomright']['x'], self.result[i]['bottomright']['y'])
+			cv2.rectangle(self.image,coordtl,coordbr,(0,255,0),2)
+		cv2.imshow("memes", self.image)
+    
+	def video(self, video_file):
+		cap = cv2.VideoCapture(video_file)
+		while cap.isOpened():
+			ret, self.image = cap.read()
+			self.result = self.tfnet.return_predict(self.image)
+			self.print_box()
+			cv2.waitKey(1)
 
-pred = darkflow_prediction("../cars1.png")
+pred = darkflow_prediction("../cars3.jpg")
+pred.video('../car1min.avi')
