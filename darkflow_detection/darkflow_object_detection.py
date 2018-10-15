@@ -58,8 +58,6 @@ class darkflow_prediction():
 			cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
 		for i, val in enumerate(asd):
 			cv2.putText(self.image, str(val[1]), tuple(val[0]), cv2.FONT_HERSHEY_PLAIN, 0.2, (200,255,155), 3)
-	
-
 		cv2.imshow("memes", self.image)
 
 	def video(self, video_file):
