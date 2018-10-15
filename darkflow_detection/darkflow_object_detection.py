@@ -88,21 +88,50 @@ class darkflow_prediction():
 		print(len(self.video_results_full))
 		print(self.video_results_split)
 		print(len(self.video_results_split))
-		print(len(images))
-		count = 2
-		self.clusters = []
+		self.group_grand_boxes = []
 		for group in self.video_results_split:
-			x_points = []
-			y_points = []
 			cluster_points = []
 			for frame in group:
 				for object_det in frame:
-					x_points.append(object_det['x'])
-					y_points.append(object_det['y'])
 					cluster_points.append([object_det['x'], object_det['y']])
 			model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
 			clusters = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
-			self.clusters.append(clusters)
+			clustered_points = {}
+			for point in clusters:
+				if point[1] not in clustered_points:
+					clustered_points[point[1]] = []
+				clustered_points[point[1]].append((point[0][0], point[0][1]))
+			grand_boxes = []
+			for cluster_val in clustered_points:
+				avgd_x, avgd_y = 0, 0
+				for point in clustered_points[cluster_val]:
+					avgd_x += point[0]
+					avgd_y += point[1]
+				avgd_x /= len(clustered_points[cluster_val])
+				avgd_y /= len(clustered_points[cluster_val])
+				width, height = 0, 0
+				classif, confidence = '', ''
+				for point in clustered_points[cluster_val]:
+					for frame in group:
+						for object_det in frame:
+							if object_det['x'] == point[0] and object_det['y'] == point[1]:
+								width += object_det['width']
+								height += object_det['height']
+								classif = object_det['class']
+								confidence = object_det['confidence']
+				width /= len(clustered_points[cluster_val])
+				height /= len(clustered_points[cluster_val])
+				box = {'x': avgd_x, 'y': avgd_y, 'width': width,
+					   'height': height, "class": classif, "confidence": confidence}
+				grand_boxes.append(box)
+			print(grand_boxes)
+			self.group_grand_boxes.append(grand_boxes)
+		print(self.group_grand_boxes)
+		print(len(self.group_grand_boxes))
+		count = 2
+		for group in self.group_grand_boxes:
+			x_points = [box['x'] for box in group]
+			y_points = [box['y'] for box in group]
 			plt.scatter(x_points, y_points)
 			plt.imshow(images[count])
 			plt.show()
