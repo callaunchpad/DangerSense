@@ -48,12 +48,14 @@ class darkflow_prediction():
 	def video(self, video_file):
 		self.video = cv2.VideoCapture(video_file)
 		results = []
+		images = []
 		try:
 			while self.video.isOpened():
 				ret, self.image = self.video.read()
 				self.result = self.tfnet.return_predict(self.image)
-				# self.print_box()
+				self.print_box()
 				results.append(self.result)
+				images.append(self.images)
 				cv2.waitKey(1)
 		except AssertionError:
 			pass
@@ -85,6 +87,8 @@ class darkflow_prediction():
 		print(len(self.video_results_full))
 		print(self.video_results_split)
 		print(len(self.video_results_split))
+		print(len(images))
+		count = 0
 		for group in self.video_results_split:
 			x_points = []
 			y_points = []
@@ -93,7 +97,9 @@ class darkflow_prediction():
 					x_points.append(object_det['x'])
 					y_points.append(object_det['y'])
 			plt.scatter(x_points, y_points)
+			plt.plot(images[count])
 			plt.show()
+			count += 1
 
 	def video_with_frame_drop(self, video_file, FPS=30):
 		self.video = cv2.VideoCapture(video_file)
