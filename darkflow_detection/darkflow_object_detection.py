@@ -133,7 +133,8 @@ class darkflow_prediction():
 		print(self.video_results_split)
 		print(len(self.video_results_split))
 		print(len(images))
-		count = 0
+		count = 2
+		self.clusters = []
 		for group in self.video_results_split:
 			x_points = []
 			y_points = []
@@ -144,12 +145,12 @@ class darkflow_prediction():
 					y_points.append(object_det['y'])
 					cluster_points.append([object_det['x'], object_det['y']])
 			model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
-			asd = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
-			print(asd)
+			clusters = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
+			self.clusters.append(clusters)
 			plt.scatter(x_points, y_points)
-			plt.plot(images[count])
+			plt.imshow(images[count])
 			plt.show()
-			count += 1
+			count += 5
 
 	def video_with_frame_drop(self, video_file, FPS=30):
 		self.video = cv2.VideoCapture(video_file)
