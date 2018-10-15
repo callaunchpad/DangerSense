@@ -20,6 +20,7 @@ from keras.callbacks import EarlyStopping
 from darkflow.net.build import TFNet
 import re
 import time
+from sklearn.cluster import DBSCAN
 
 class darkflow_prediction():
 
@@ -88,10 +89,15 @@ class darkflow_prediction():
 		for group in self.video_results_split:
 			x_points = []
 			y_points = []
+			cluster_points = []
 			for frame in group:
 				for object_det in frame:
 					x_points.append(object_det['x'])
 					y_points.append(object_det['y'])
+					cluster_points.append([object_det['x'], object_det['y']])
+			model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
+			asd = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
+			print(asd)
 			plt.scatter(x_points, y_points)
 			plt.show()
 
