@@ -23,7 +23,6 @@ import time
 
 class darkflow_prediction():
 
-
 	def __init__(self):
 		self.options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.5}
 		self.tfnet = TFNet(self.options)
@@ -42,17 +41,50 @@ class darkflow_prediction():
 			coordbr = (self.result[i]['bottomright']['x'], self.result[i]['bottomright']['y'])
 			cv2.rectangle(self.image,coordtl,coordbr,(0,255,0),2)
 			s = str(self.result[i]['label'] + ": " + str(self.result[i]['confidence']))
-			cv2.putText(self.image, s, coordbr, font, 1, (255,255,0))
+			text_coord = (coordtl[0], coordtl[1]-10)
+			cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
 		cv2.imshow("memes", self.image)
 
 	def video(self, video_file):
 		self.video = cv2.VideoCapture(video_file)
-		while self.video.isOpened():
-			ret, self.image = self.video.read()
-			self.result = self.tfnet.return_predict(self.image)
-			self.print_box()
-			cv2.waitKey(1)
-	
+		results = []
+		try:
+			while self.video.isOpened():
+				ret, self.image = self.video.read()
+				self.result = self.tfnet.return_predict(self.image)
+				# self.print_box()
+				results.append(self.result)
+				cv2.waitKey(1)
+		except AssertionError:
+			pass
+		self.video_results_full = []
+		for frame in results:
+			new_frame = []
+			for elem in frame:
+				coordtl = (elem['topleft']['x'], elem['topleft']['y'])
+				coordbr = (elem['bottomright']['x'], elem['bottomright']['y'])
+				classif = elem['label']
+				confidence = elem['confidence']
+				width = coordbr[0] - coordtl[0]
+				height = coordbr[1] - coordtl[1]
+				x_center = coordtl[0] + width//2
+				y_center = coordtl[1] + height//2
+				new_elem = {'x': x_center, 'y': y_center, 'width': width,
+							'height': height, "class": classif, "confidence": confidence}
+				new_frame.append(new_elem)
+			self.video_results_full.append(new_frame)
+		self.video_results_split = []
+		interm, count = [], 1
+		for elem in self.video_results_full:
+			interm.append(elem)
+			if count % 5 == 0:
+				self.video_results_split.append(interm)
+				interm = []
+			count += 1
+		print(self.video_results_full)
+		print(len(self.video_results_full))
+		print(self.video_results_split)
+
 	def video_with_frame_drop(self, video_file, FPS=30):
 		self.video = cv2.VideoCapture(video_file)
 		skip_frames = 0
@@ -72,4 +104,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video_with_frame_drop("../cars_video.mp4")
+pred.video("../cars_video_min.mp4")
