@@ -84,6 +84,16 @@ class darkflow_prediction():
 		print(self.video_results_full)
 		print(len(self.video_results_full))
 		print(self.video_results_split)
+		print(len(self.video_results_split))
+		for group in self.video_results_split:
+			x_points = []
+			y_points = []
+			for frame in group:
+				for object_det in frame:
+					x_points.append(object_det['x'])
+					y_points.append(object_det['y'])
+			plt.scatter(x_points, y_points)
+			plt.show()
 
 	def video_with_frame_drop(self, video_file, FPS=30):
 		self.video = cv2.VideoCapture(video_file)
