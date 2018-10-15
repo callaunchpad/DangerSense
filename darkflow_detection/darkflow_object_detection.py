@@ -27,6 +27,7 @@ class darkflow_prediction():
 	def __init__(self):
 		self.options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.5}
 		self.tfnet = TFNet(self.options)
+		self.cluster = []
 
 	def image(self, image_file):
 		self.image = cv2.imread(image_file, 1)
@@ -45,18 +46,61 @@ class darkflow_prediction():
 			text_coord = (coordtl[0], coordtl[1]-10)
 			cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
 		cv2.imshow("memes", self.image)
+	
+	def print_box_with_clusters(self, asd):
+		font = cv2.FONT_HERSHEY_PLAIN
+		for i in range(len(self.result)):
+			coordtl = (self.result[i]['topleft']['x'], self.result[i]['topleft']['y'])
+			coordbr = (self.result[i]['bottomright']['x'], self.result[i]['bottomright']['y'])
+			cv2.rectangle(self.image,coordtl,coordbr,(0,255,0),2)
+			s = str(self.result[i]['label'] + ": " + str(self.result[i]['confidence']))
+			text_coord = (coordtl[0], coordtl[1]-10)
+			cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
+		for i, val in enumerate(asd):
+			cv2.putText(self.image, str(val[1]), tuple(val[0]), cv2.FONT_HERSHEY_PLAIN, 0.2, (200,255,155), 3)
+	
+
+		cv2.imshow("memes", self.image)
 
 	def video(self, video_file):
 		self.video = cv2.VideoCapture(video_file)
 		results = []
 		images = []
+		interm, count = [], 1
 		try:
+			x_points = []
+			y_points = []
+			cluster_points = []
+			asd = []
 			while self.video.isOpened():
 				ret, self.image = self.video.read()
 				self.result = self.tfnet.return_predict(self.image)
-				self.print_box()
+				for elem in self.result:
+					coordtl = (elem['topleft']['x'], elem['topleft']['y'])
+					coordbr = (elem['bottomright']['x'], elem['bottomright']['y'])
+					classif = elem['label']
+					confidence = elem['confidence']
+					width = coordbr[0] - coordtl[0]
+					height = coordbr[1] - coordtl[1]
+					x_center = coordtl[0] + width//2
+					y_center = coordtl[1] + height//2
+					new_elem = {'x': x_center, 'y': y_center, 'width': width,
+								'height': height, "class": classif, "confidence": confidence}
+					interm.append(new_elem)
+				if count % 5 == 0:
+					x_points = []
+					y_points = []
+					cluster_points = []
+					for object_det in interm:
+						x_points.append(object_det['x'])
+						y_points.append(object_det['y'])
+						cluster_points.append([object_det['x'], object_det['y']])
+						model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
+						asd = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
+					interm = []
+				count += 1
+				self.print_box_with_clusters(asd)
 				results.append(self.result)
-				images.append(self.image)
 				cv2.waitKey(1)
 		except AssertionError:
 			pass
