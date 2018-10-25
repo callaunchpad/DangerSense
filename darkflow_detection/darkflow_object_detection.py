@@ -194,6 +194,23 @@ class darkflow_prediction():
 			plt.show()
 			count += 5
 
+		self.object_trajectories = []
+		for i in range(len(self.group_grand_boxes)-1):
+			for grand_object in self.group_grand_boxes[i]:
+				closest_dist = 999999999999
+				closest_obj = None
+				print(self.group_grand_boxes[i+1])
+				for next_object_idx in range(len(self.group_grand_boxes[i+1])):
+					next_object = self.group_grand_boxes[i+1][next_object_idx]
+					euclidean_dist = np.sqrt((next_object['x'] - grand_object['x'])**2 + (next_object['y'] - grand_object['y'])**2)
+					if euclidean_dist < closest_dist:
+						closest_dist = euclidean_dist
+						closest_obj = next_object_idx
+				print(closest_dist)
+				if closest_dist <= 50:
+					grand_object['next'] = closest_obj
+		print(self.group_grand_boxes)
+
 	def video_with_frame_drop(self, video_file, FPS=30):
 		self.video = cv2.VideoCapture(video_file)
 		skip_frames = 0
