@@ -46,7 +46,7 @@ class darkflow_prediction():
 			text_coord = (coordtl[0], coordtl[1]-10)
 			cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
 		cv2.imshow("memes", self.image)
-    
+
 	def print_box_with_clusters(self, asd):
 		font = cv2.FONT_HERSHEY_PLAIN
 		for i in range(len(self.result)):
@@ -194,22 +194,35 @@ class darkflow_prediction():
 			plt.show()
 			count += 5
 
-		self.object_trajectories = []
 		for i in range(len(self.group_grand_boxes)-1):
 			for grand_object in self.group_grand_boxes[i]:
 				closest_dist = 999999999999
-				closest_obj = None
-				print(self.group_grand_boxes[i+1])
+				closest_obj, closest_obj_idx = None, None
 				for next_object_idx in range(len(self.group_grand_boxes[i+1])):
 					next_object = self.group_grand_boxes[i+1][next_object_idx]
 					euclidean_dist = np.sqrt((next_object['x'] - grand_object['x'])**2 + (next_object['y'] - grand_object['y'])**2)
 					if euclidean_dist < closest_dist:
 						closest_dist = euclidean_dist
-						closest_obj = next_object_idx
+						closest_obj = next_object
+						closest_obj_idx = next_object_idx
 				print(closest_dist)
 				if closest_dist <= 50:
-					grand_object['next'] = closest_obj
-		print(self.group_grand_boxes)
+					grand_object['next'] = self.hash_object(closest_obj)
+					self.group_grand_boxes[i+1][closest_obj_idx]['prev'] = self.hash_object(grand_object)
+		self.object_trajectories = {}
+		for group in self.group_grand_boxes:
+			for obj in group:
+				if "prev" not in obj:
+					self.object_trajectories[self.hash_object(obj)] = [obj]
+				else:
+					self.object_trajectories[obj['prev']].append(obj)
+					self.object_trajectories[self.hash_object(obj)] = self.object_trajectories[obj['prev']]
+					self.object_trajectories[obj['prev']] = None
+		self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if v is not None}
+		print(self.object_trajectories)
+
+	def hash_object(self, detected_object):
+		return str(detected_object["x"]) + str(detected_object["y"]) + str(detected_object["class"]) + str(detected_object["confidence"])
 
 	def video_with_frame_drop(self, video_file, FPS=30):
 		self.video = cv2.VideoCapture(video_file)
