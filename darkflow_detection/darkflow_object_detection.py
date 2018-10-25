@@ -105,7 +105,7 @@ class darkflow_prediction():
 					self.roll += 1
 				cluster_points = []
 				if len(counters) == 5:
-					self.video_results_split.append(interm)
+					self.video_results_split.append(interm[:])
 					for i in interm:
 						for object_det in i:
 							cluster_points.append([object_det['x'], object_det['y']])
@@ -140,11 +140,9 @@ class darkflow_prediction():
 				self.video_results_split.append(interm)
 				interm = []
 			count += 1'''
-		print(self.video_results_full)
-		print(len(self.video_results_full))
-		print(self.video_results_split)
-		print(len(self.video_results_split))
 		self.group_grand_boxes = []
+		#Mod 1
+		prev_grand_box = None
 		for group in self.video_results_split:
 			cluster_points = [] #still need all the individual point data to get individual box data for box averaging
 			for frame in group: #each frame object is 5 video frames
@@ -153,6 +151,7 @@ class darkflow_prediction():
 			model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
 			clusters = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
 			clustered_points = {}
+			
 			for point in clusters:
 				if point[1] not in clustered_points:
 					clustered_points[point[1]] = []
@@ -180,18 +179,17 @@ class darkflow_prediction():
 				box = {'x': avgd_x, 'y': avgd_y, 'width': width,
 					   'height': height, "class": classif, "confidence": confidence}
 				grand_boxes.append(box) #creating a grand box for each object for every 5 frames
-			print(grand_boxes)
+			prev_grand_box = grand_boxes
 			self.group_grand_boxes.append(grand_boxes)
-		print(self.group_grand_boxes)
-		print(len(self.group_grand_boxes))
-		count = 2
+		#End Mod 1
+		count = 4
 		for group in self.group_grand_boxes:
 			x_points = [box['x'] for box in group]
 			y_points = [box['y'] for box in group]
 			plt.scatter(x_points, y_points)
 			plt.imshow(images[count])
 			plt.show()
-			count += 5
+			count += 1
 
 		for i in range(len(self.group_grand_boxes)-1):
 			for grand_object in self.group_grand_boxes[i]:
