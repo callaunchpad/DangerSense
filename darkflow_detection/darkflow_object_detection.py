@@ -70,6 +70,8 @@ class darkflow_prediction():
 			asd = []
 			counters = []
 			self.roll = 0
+			self.video_results_split = []
+			self.video_results_full = []
 			while self.video.isOpened():
 				ret, self.image = self.video.read() #reads 1 frame of the video (as image)
 				images.append(np.copy(self.image))
@@ -91,14 +93,11 @@ class darkflow_prediction():
 								'height': height, "class": classif, "confidence": confidence}
 					counter+=1
 					interm2.append(new_elem)
+				self.video_results_full.append(interm2)
 				if len(counters)< 5: 
-					interm.extend(interm2) #interm = list of objects in the image
+					interm.append(interm2) #interm = list of objects in the image
 				else: #once reach 5th frame
-					if self.roll%5 == 0:
-						interm[0: sum(counters[:self.roll%5+1])] = interm2
-					elif self.roll%5 == 4:
-						interm[sum(counters[:self.roll%5]):] = interm2
-					interm[sum(counters[:self.roll%5]): sum(counters[:self.roll%5])] = interm2
+					interm[self.roll%5] = interm2
 				if len(counters)<5:
 					counters.append(counter)
 				else:
@@ -106,8 +105,10 @@ class darkflow_prediction():
 					self.roll += 1
 				cluster_points = []
 				if len(counters) == 5:
-					for object_det in interm:
-						cluster_points.append([object_det['x'], object_det['y']])
+					self.video_results_split.append(interm)
+					for i in interm:
+						for object_det in i:
+							cluster_points.append([object_det['x'], object_det['y']])
 					model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
 				asd = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
 				count += 1
@@ -115,8 +116,7 @@ class darkflow_prediction():
 				cv2.waitKey(1)
 		except AssertionError:
 			pass
-		print('woot')
-		self.video_results_full = [] #list of all objects
+		'''self.video_results_full = [] #list of all objects
 		for frame in results:
 			new_frame = []
 			for elem in frame: #creating all boxes in each frame
@@ -132,19 +132,18 @@ class darkflow_prediction():
 							'height': height, "class": classif, "confidence": confidence}
 				new_frame.append(new_elem)
 			self.video_results_full.append(new_frame)
-		self.video_results_split = [] #split every 5 frames into its own group (place each 5 into a list)
-		interm, count = [], 1
+		#self.video_results_split = [] #split every 5 frames into its own group (place each 5 into a list)
+		#interm, count = [], 1
 		for elem in self.video_results_full:
 			interm.append(elem)
 			if count % 5 == 0:
 				self.video_results_split.append(interm)
 				interm = []
-			count += 1
+			count += 1'''
 		print(self.video_results_full)
 		print(len(self.video_results_full))
 		print(self.video_results_split)
 		print(len(self.video_results_split))
-
 		self.group_grand_boxes = []
 		for group in self.video_results_split:
 			cluster_points = [] #still need all the individual point data to get individual box data for box averaging
