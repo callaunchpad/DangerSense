@@ -45,8 +45,7 @@ class darkflow_prediction():
 			s = str(self.result[i]['label'] + ": " + str(self.result[i]['confidence']))
 			text_coord = (coordtl[0], coordtl[1]-10)
 			cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
-		cv2.imshow("memes", self.image)
-	
+		cv2.imshow("memes", self.image)	
 	def print_box_with_clusters(self, asd):
 		font = cv2.FONT_HERSHEY_PLAIN
 		for i in range(len(self.result)):
@@ -68,11 +67,15 @@ class darkflow_prediction():
 		try:
 			cluster_points = []
 			asd = []
+			counters = []
+			self.roll = 0
 			while self.video.isOpened():
 				ret, self.image = self.video.read()
 				images.append(np.copy(self.image))
 				self.result = self.tfnet.return_predict(self.image)
 				results.append(self.result)
+				counter = 0
+				interm2 = []
 				for elem in self.result:
 					coordtl = (elem['topleft']['x'], elem['topleft']['y'])
 					coordbr = (elem['bottomright']['x'], elem['bottomright']['y'])
@@ -84,19 +87,33 @@ class darkflow_prediction():
 					y_center = coordtl[1] + height//2
 					new_elem = {'x': x_center, 'y': y_center, 'width': width,
 								'height': height, "class": classif, "confidence": confidence}
-					interm.append(new_elem)
-				if count % 5 == 0:
-					cluster_points = []
+					counter+=1
+					interm2.append(new_elem)
+				if len(counters)< 5:
+					interm.extend(interm2)
+				else:
+					if self.roll%5 == 0:
+						interm[0: sum(counters[:self.roll%5+1])] = interm2
+					elif self.roll%5 == 4:
+						interm[sum(counters[:self.roll%5]):] = interm2
+					interm[sum(counters[:self.roll%5]): sum(counters[:self.roll%5])] = interm2
+				if len(counters)<5:
+					counters.append(counter)
+				else:
+					counters[self.roll%5] = counter
+					self.roll += 1
+				cluster_points = []
+				if len(counters) == 5:
 					for object_det in interm:
 						cluster_points.append([object_det['x'], object_det['y']])
-						model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
-						asd = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
-					interm = []
+					model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
+				asd = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
 				count += 1
 				self.print_box_with_clusters(asd)
 				cv2.waitKey(1)
 		except AssertionError:
 			pass
+		print('woot')
 		self.video_results_full = []
 		for frame in results:
 			new_frame = []
