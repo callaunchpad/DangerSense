@@ -57,7 +57,7 @@ class darkflow_prediction():
 			text_coord = (coordtl[0], coordtl[1]-10)
 			cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
 		for i, val in enumerate(asd):
-			cv2.putText(self.image, str(val[1]), tuple(val[0]), cv2.FONT_HERSHEY_PLAIN, 0.2, (200,255,155), 3)
+			cv2.putText(self.image, str(val[1]), tuple(val[0]), font, 1, (250,250,0), 3)
 		cv2.imshow("memes", self.image)
 
 	def video(self, video_file):
@@ -66,13 +66,13 @@ class darkflow_prediction():
 		images = []
 		interm, count = [], 1
 		try:
-			x_points = []
-			y_points = []
 			cluster_points = []
 			asd = []
 			while self.video.isOpened():
 				ret, self.image = self.video.read()
+				images.append(np.copy(self.image))
 				self.result = self.tfnet.return_predict(self.image)
+				results.append(self.result)
 				for elem in self.result:
 					coordtl = (elem['topleft']['x'], elem['topleft']['y'])
 					coordbr = (elem['bottomright']['x'], elem['bottomright']['y'])
@@ -86,19 +86,14 @@ class darkflow_prediction():
 								'height': height, "class": classif, "confidence": confidence}
 					interm.append(new_elem)
 				if count % 5 == 0:
-					x_points = []
-					y_points = []
 					cluster_points = []
 					for object_det in interm:
-						x_points.append(object_det['x'])
-						y_points.append(object_det['y'])
 						cluster_points.append([object_det['x'], object_det['y']])
 						model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
 						asd = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
 					interm = []
 				count += 1
 				self.print_box_with_clusters(asd)
-				results.append(self.result)
 				cv2.waitKey(1)
 		except AssertionError:
 			pass
