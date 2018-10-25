@@ -45,7 +45,8 @@ class darkflow_prediction():
 			s = str(self.result[i]['label'] + ": " + str(self.result[i]['confidence']))
 			text_coord = (coordtl[0], coordtl[1]-10)
 			cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
-		cv2.imshow("memes", self.image)	
+		cv2.imshow("memes", self.image)
+    
 	def print_box_with_clusters(self, asd):
 		font = cv2.FONT_HERSHEY_PLAIN
 		for i in range(len(self.result)):
@@ -61,7 +62,7 @@ class darkflow_prediction():
 
 	def video(self, video_file):
 		self.video = cv2.VideoCapture(video_file)
-		results = []
+		results = [] #results = list of lists of object dictionaries [ frame1[{object}, {}, {}], frame2[{object}, {}, {}] ]
 		images = []
 		interm, count = [], 1
 		try:
@@ -70,13 +71,14 @@ class darkflow_prediction():
 			counters = []
 			self.roll = 0
 			while self.video.isOpened():
-				ret, self.image = self.video.read()
+				ret, self.image = self.video.read() #reads 1 frame of the video (as image)
 				images.append(np.copy(self.image))
+				#self.result = list of dictionaries of each object in the image (in that current frame)
 				self.result = self.tfnet.return_predict(self.image)
 				results.append(self.result)
 				counter = 0
 				interm2 = []
-				for elem in self.result:
+				for elem in self.result: #creating boxes for all objects in that frame
 					coordtl = (elem['topleft']['x'], elem['topleft']['y'])
 					coordbr = (elem['bottomright']['x'], elem['bottomright']['y'])
 					classif = elem['label']
@@ -89,9 +91,9 @@ class darkflow_prediction():
 								'height': height, "class": classif, "confidence": confidence}
 					counter+=1
 					interm2.append(new_elem)
-				if len(counters)< 5:
-					interm.extend(interm2)
-				else:
+				if len(counters)< 5: 
+					interm.extend(interm2) #interm = list of objects in the image
+				else: #once reach 5th frame
 					if self.roll%5 == 0:
 						interm[0: sum(counters[:self.roll%5+1])] = interm2
 					elif self.roll%5 == 4:
@@ -114,10 +116,10 @@ class darkflow_prediction():
 		except AssertionError:
 			pass
 		print('woot')
-		self.video_results_full = []
+		self.video_results_full = [] #list of all objects
 		for frame in results:
 			new_frame = []
-			for elem in frame:
+			for elem in frame: #creating all boxes in each frame
 				coordtl = (elem['topleft']['x'], elem['topleft']['y'])
 				coordbr = (elem['bottomright']['x'], elem['bottomright']['y'])
 				classif = elem['label']
@@ -130,7 +132,7 @@ class darkflow_prediction():
 							'height': height, "class": classif, "confidence": confidence}
 				new_frame.append(new_elem)
 			self.video_results_full.append(new_frame)
-		self.video_results_split = []
+		self.video_results_split = [] #split every 5 frames into its own group (place each 5 into a list)
 		interm, count = [], 1
 		for elem in self.video_results_full:
 			interm.append(elem)
@@ -142,12 +144,13 @@ class darkflow_prediction():
 		print(len(self.video_results_full))
 		print(self.video_results_split)
 		print(len(self.video_results_split))
+
 		self.group_grand_boxes = []
 		for group in self.video_results_split:
-			cluster_points = []
-			for frame in group:
+			cluster_points = [] #still need all the individual point data to get individual box data for box averaging
+			for frame in group: #each frame object is 5 video frames
 				for object_det in frame:
-					cluster_points.append([object_det['x'], object_det['y']])
+					cluster_points.append([object_det['x'], object_det['y']]) #extracts the coordinates of each object
 			model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
 			clusters = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
 			clustered_points = {}
@@ -155,7 +158,7 @@ class darkflow_prediction():
 				if point[1] not in clustered_points:
 					clustered_points[point[1]] = []
 				clustered_points[point[1]].append((point[0][0], point[0][1]))
-			grand_boxes = []
+			grand_boxes = [] #creating each single grand box
 			for cluster_val in clustered_points:
 				avgd_x, avgd_y = 0, 0
 				for point in clustered_points[cluster_val]:
@@ -177,7 +180,7 @@ class darkflow_prediction():
 				height /= len(clustered_points[cluster_val])
 				box = {'x': avgd_x, 'y': avgd_y, 'width': width,
 					   'height': height, "class": classif, "confidence": confidence}
-				grand_boxes.append(box)
+				grand_boxes.append(box) #creating a grand box for each object for every 5 frames
 			print(grand_boxes)
 			self.group_grand_boxes.append(grand_boxes)
 		print(self.group_grand_boxes)
