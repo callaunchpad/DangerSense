@@ -73,6 +73,9 @@ class darkflow_prediction():
 		# Grand boxes for each group of 5 frames
 		self.group_grand_boxes = []
 
+		# Actual trajectories of objects through frames
+		self.object_trajectories = {}
+
 		try:
 			while self.video.isOpened():
 				# Read 1 frame of the video (as image), append to our list of images
@@ -94,27 +97,15 @@ class darkflow_prediction():
 					grand_boxes = self.get_clusters(self.video_results_split[-1])
 					self.print_grand_box(grand_boxes)
 					self.group_grand_boxes.append(grand_boxes)
+					if len(self.group_grand_boxes) > 2:
+						self.track_objects_between_frames(self.group_grand_boxes[-2], self.group_grand_boxes[-1])
 
 				count += 1
 				cv2.waitKey(1)
 		except AssertionError:
 			pass
 
-		for i in range(len(self.group_grand_boxes)-1):
-			for grand_object in self.group_grand_boxes[i]:
-				closest_dist = 999999999999
-				closest_obj, closest_obj_idx = None, None
-				for next_object_idx in range(len(self.group_grand_boxes[i+1])):
-					next_object = self.group_grand_boxes[i+1][next_object_idx]
-					euclidean_dist = np.sqrt((next_object['x'] - grand_object['x'])**2 + (next_object['y'] - grand_object['y'])**2)
-					if euclidean_dist < closest_dist:
-						closest_dist = euclidean_dist
-						closest_obj = next_object
-						closest_obj_idx = next_object_idx
-				if closest_dist <= 25:
-					grand_object['next'] = self.hash_object(closest_obj)
-					self.group_grand_boxes[i+1][closest_obj_idx]['prev'] = self.hash_object(grand_object)
-		self.object_trajectories = {}
+		print(self.group_grand_boxes)
 		for group in self.group_grand_boxes:
 			for obj in group:
 				if "prev" not in obj:
@@ -124,7 +115,9 @@ class darkflow_prediction():
 					self.object_trajectories[self.hash_object(obj)] = self.object_trajectories[obj['prev']]
 					self.object_trajectories[obj['prev']] = None
 		self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if v is not None}
-		print(self.object_trajectories)
+		for i in self.object_trajectories:
+			print("\n\n")
+			print(self.object_trajectories[i])
 
 	def hash_object(self, detected_object):
 		return str(detected_object["x"]) + str(detected_object["y"]) + str(detected_object["class"]) + str(detected_object["confidence"])
@@ -190,6 +183,21 @@ class darkflow_prediction():
 			cv2.circle(image, (int(x_points[i]), int(y_points[i])), 15, (255-int(255*i//len(x_points)),0,int(255*i//len(x_points))), -1)
 		cv2.imshow("centroids", image)
 		cv2.waitKey(2)
+
+	def track_objects_between_frames(self, curr_frame, next_frame):
+		for grand_object in curr_frame:
+			closest_dist = 999999999999
+			closest_obj, closest_obj_idx = None, None
+			for next_object_idx in range(len(next_frame)):
+				next_object = next_frame[next_object_idx]
+				euclidean_dist = np.sqrt((next_object['x'] - grand_object['x'])**2 + (next_object['y'] - grand_object['y'])**2)
+				if euclidean_dist < closest_dist:
+					closest_dist = euclidean_dist
+					closest_obj = next_object
+					closest_obj_idx = next_object_idx
+			if closest_dist <= 25:
+				grand_object['next'] = self.hash_object(closest_obj)
+				next_frame[closest_obj_idx]['prev'] = self.hash_object(grand_object)
 
 	def video_with_frame_drop(self, video_file, FPS=30):
 		self.video = cv2.VideoCapture(video_file)
