@@ -21,11 +21,12 @@ from darkflow.net.build import TFNet
 import re
 import time
 from sklearn.cluster import DBSCAN
+import pickle
 
 class darkflow_prediction():
 
 	def __init__(self):
-		self.options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.5}
+		self.options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.3}
 		self.tfnet = TFNet(self.options)
 		self.cluster = []
 		self.FRAME_BUFFER = 10
@@ -91,34 +92,36 @@ class darkflow_prediction():
 				interm.append(frame_result)
 
 				# Use a sliding window approach to compute groups/grand boxes
-				# if count > self.FRAME_BUFFER:
-				# 	interm.pop(0)
+				if count > self.FRAME_BUFFER:
+					interm.pop(0)
 				if len(interm) == self.FRAME_BUFFER:
 					self.video_results_split.append(interm[:])
+					print(interm)
+					print(self.video_results_split[-1])
 					grand_boxes = self.get_clusters(self.video_results_split[-1])
 					self.print_grand_box(grand_boxes)
 					self.group_grand_boxes.append(grand_boxes)
 					if len(self.group_grand_boxes) >= 2:
 						self.track_objects_between_frames(self.group_grand_boxes[-2], self.group_grand_boxes[-1])
-					interm = []
+					for obj in self.group_grand_boxes[-1]:
+						if "prev" not in obj:
+							self.object_trajectories[self.hash_object(obj)] = [obj]
+						else:
+							self.object_trajectories[obj['prev']].append(obj)
+							self.object_trajectories[self.hash_object(obj)] = [elem for elem in self.object_trajectories[obj['prev']] if elem != ["purge"]]
+							self.object_trajectories[obj['prev']].append(["purge"])
 
 				count += 1
 				cv2.waitKey(1)
 		except AssertionError:
 			pass
 
-		# print(self.group_grand_boxes)
-		for group in self.group_grand_boxes:
-			for obj in group:
-				self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if v is not None}
-				if "prev" not in obj:
-					self.object_trajectories[self.hash_object(obj)] = [obj]
-				else:
-					self.object_trajectories[obj['prev']].append(obj)
-					self.object_trajectories[self.hash_object(obj)] = self.object_trajectories[obj['prev']]
-					self.object_trajectories[obj['prev']] = None
+		self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if ["purge"] not in v}
 		print(self.object_trajectories)
-		# Save to file
+		with open('object_trajectories.pickle', 'wb') as handle:
+			pickle.dump(self.object_trajectories, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		with open('last_image.pickle', 'wb') as handle:
+			pickle.dump(self.images[-1], handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 	def hash_object(self, detected_object):
 		return str(detected_object["x"]) + str(detected_object["y"]) + str(detected_object["class"]) + str(detected_object["confidence"])
@@ -143,6 +146,7 @@ class darkflow_prediction():
 		cluster_points = [] #still need all the individual point data to get individual box data for box averaging
 		for frame in group: #each frame object is 5 video frames
 			for object_det in frame:
+				# + object_det['width'] + object_det['height']
 				cluster_points.append([object_det['x'], object_det['y']]) #extracts the coordinates of each object
 		model = DBSCAN(eps=70, min_samples=2).fit(np.array(cluster_points))
 		clusters = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
@@ -196,7 +200,7 @@ class darkflow_prediction():
 					closest_dist = euclidean_dist
 					closest_obj = next_object
 					closest_obj_idx = next_object_idx
-			if closest_dist <= 25:
+			if closest_dist <= 50:
 				grand_object['next'] = self.hash_object(closest_obj)
 				next_frame[closest_obj_idx]['prev'] = self.hash_object(grand_object)
 
@@ -219,4 +223,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../cars_video_med.mp4")
+pred.video("../snippet.mp4")
