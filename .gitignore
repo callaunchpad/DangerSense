@@ -3,3 +3,4 @@ darkflow_detection/.DS_Store
 darkflow_detection/bin/yolov2.weights
 darkflow_detection/bin/yolov3.weights
 *.pyc
+commented_code.py
