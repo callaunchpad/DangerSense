@@ -97,7 +97,7 @@ class darkflow_prediction():
 					grand_boxes = self.get_clusters(self.video_results_split[-1])
 					self.print_grand_box(grand_boxes)
 					self.group_grand_boxes.append(grand_boxes)
-					if len(self.group_grand_boxes) > 2:
+					if len(self.group_grand_boxes) >= 2:
 						self.track_objects_between_frames(self.group_grand_boxes[-2], self.group_grand_boxes[-1])
 
 				count += 1
