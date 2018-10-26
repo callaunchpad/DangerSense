@@ -90,34 +90,34 @@ class darkflow_prediction():
 				interm.append(frame_result)
 
 				# Use a sliding window approach to compute groups/grand boxes
-				if count > 5:
-					interm.pop(0)
-				if len(interm) == 5:
+				# if count > 10:
+				# 	interm.pop(0)
+				if len(interm) == 10:
 					self.video_results_split.append(interm[:])
 					grand_boxes = self.get_clusters(self.video_results_split[-1])
 					self.print_grand_box(grand_boxes)
 					self.group_grand_boxes.append(grand_boxes)
 					if len(self.group_grand_boxes) >= 2:
 						self.track_objects_between_frames(self.group_grand_boxes[-2], self.group_grand_boxes[-1])
+					interm = []
 
 				count += 1
 				cv2.waitKey(1)
 		except AssertionError:
 			pass
 
-		print(self.group_grand_boxes)
+		# print(self.group_grand_boxes)
 		for group in self.group_grand_boxes:
 			for obj in group:
+				self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if v is not None}
 				if "prev" not in obj:
 					self.object_trajectories[self.hash_object(obj)] = [obj]
 				else:
 					self.object_trajectories[obj['prev']].append(obj)
 					self.object_trajectories[self.hash_object(obj)] = self.object_trajectories[obj['prev']]
 					self.object_trajectories[obj['prev']] = None
-		self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if v is not None}
-		for i in self.object_trajectories:
-			print("\n\n")
-			print(self.object_trajectories[i])
+		print(self.object_trajectories)
+		# Save to file
 
 	def hash_object(self, detected_object):
 		return str(detected_object["x"]) + str(detected_object["y"]) + str(detected_object["class"]) + str(detected_object["confidence"])
@@ -143,7 +143,7 @@ class darkflow_prediction():
 		for frame in group: #each frame object is 5 video frames
 			for object_det in frame:
 				cluster_points.append([object_det['x'], object_det['y']]) #extracts the coordinates of each object
-		model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
+		model = DBSCAN(eps=70, min_samples=2).fit(np.array(cluster_points))
 		clusters = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
 		clustered_points = {}
 		for point in clusters:
@@ -218,4 +218,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../cars_video_min.mp4")
+pred.video("../cars_video_med.mp4")
