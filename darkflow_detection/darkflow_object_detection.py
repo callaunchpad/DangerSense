@@ -185,9 +185,11 @@ class darkflow_prediction():
 	def print_grand_box(self, grand_boxes):
 		x_points = [box['x'] for box in grand_boxes]
 		y_points = [box['y'] for box in grand_boxes]
-		plt.scatter(x_points, y_points)
-		plt.imshow(self.images[-1])
-		plt.show()
+		image = self.images[-1].copy()
+		for i in range(len(x_points)):
+			cv2.circle(image, (int(x_points[i]), int(y_points[i])), 15, (255-int(255*i//len(x_points)),0,int(255*i//len(x_points))), -1)
+		cv2.imshow("centroids", image)
+		cv2.waitKey(2)
 
 	def video_with_frame_drop(self, video_file, FPS=30):
 		self.video = cv2.VideoCapture(video_file)
