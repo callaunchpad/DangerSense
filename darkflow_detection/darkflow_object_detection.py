@@ -28,6 +28,7 @@ class darkflow_prediction():
 		self.options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.5}
 		self.tfnet = TFNet(self.options)
 		self.cluster = []
+		self.FRAME_BUFFER = 10
 
 	def image(self, image_file):
 		self.image = cv2.imread(image_file, 1)
@@ -90,9 +91,9 @@ class darkflow_prediction():
 				interm.append(frame_result)
 
 				# Use a sliding window approach to compute groups/grand boxes
-				# if count > 10:
+				# if count > self.FRAME_BUFFER:
 				# 	interm.pop(0)
-				if len(interm) == 10:
+				if len(interm) == self.FRAME_BUFFER:
 					self.video_results_split.append(interm[:])
 					grand_boxes = self.get_clusters(self.video_results_split[-1])
 					self.print_grand_box(grand_boxes)
