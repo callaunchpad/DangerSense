@@ -28,7 +28,7 @@ class darkflow_prediction():
 		self.options = {"model": "cfg/yolo.cfg", "load": "bin/yolov2.weights", "threshold": 0.5}
 		self.tfnet = TFNet(self.options)
 		self.cluster = []
-
+		self.FRAME_BUFFER = 5
 	def image(self, image_file):
 		self.image = cv2.imread(image_file, 1)
 		self.result = self.tfnet.return_predict(self.image)
@@ -90,16 +90,15 @@ class darkflow_prediction():
 				interm.append(frame_result)
 
 				# Use a sliding window approach to compute groups/grand boxes
-				if count > 5:
+				if count > self.FRAME_BUFFER:
 					interm.pop(0)
-				if len(interm) == 5:
+				if len(interm) == self.FRAME_BUFFER:
 					self.video_results_split.append(interm[:])
 					grand_boxes = self.get_clusters(self.video_results_split[-1])
 					self.print_grand_box(grand_boxes)
 					self.group_grand_boxes.append(grand_boxes)
 					if len(self.group_grand_boxes) >= 2:
 						self.track_objects_between_frames(self.group_grand_boxes[-2], self.group_grand_boxes[-1])
-
 				count += 1
 				cv2.waitKey(1)
 		except AssertionError:
