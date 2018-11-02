@@ -16,10 +16,8 @@ from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.optimizers import RMSprop, Adam, SGD
 from keras.models import clone_model
 from keras.callbacks import EarlyStopping
-# from yolo_utils import *
 from darkflow.net.build import TFNet
 import re
-import time
 from sklearn.cluster import DBSCAN
 import pickle
 
@@ -39,6 +37,7 @@ class darkflow_prediction():
 		cv2.waitKey(0)
 
 	def print_box(self, frame_result, frame_image):
+		# triangle = [(400, 719), (650, 350), (1000, 719)]
 		font = cv2.FONT_HERSHEY_PLAIN
 		for i in range(len(frame_result)):
 			coordtl = (frame_result[i]['topleft']['x'], frame_result[i]['topleft']['y'])
@@ -86,6 +85,7 @@ class darkflow_prediction():
 
 				# Run YOLO to get the detected objects for this particular frame
 				frame_result = self.tfnet.return_predict(frame_image)
+				# frame_result = [obj for obj in frame_result if obj["label"] in ['car', 'truck']]
 				self.print_box(frame_result, frame_image)
 				frame_result = self.refactor_result(frame_result)
 				self.video_results_full.append(frame_result)
@@ -223,4 +223,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../snippet2.mp4")
+pred.video("../snippet3.mp4")

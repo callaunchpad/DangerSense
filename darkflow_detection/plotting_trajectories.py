@@ -7,7 +7,7 @@ with open('object_trajectories.pickle', 'rb') as handle:
 with open('last_image.pickle', 'rb') as handle:
 	image = pickle.load(handle)
 
-cap = cv2.VideoCapture("../snippet2.mp4")
+cap = cv2.VideoCapture("../snippet3.mp4")
 
 cap.set(1, cap.get(7)-50)
 #sets position to the last frame
@@ -24,4 +24,12 @@ for key in object_trajectories:
 	y_points = [obj['y'] for obj in path]
 	plt.scatter(x_points, y_points)
 plt.imshow(img)
+plt.show()
+
+object_paths = []
+for key in object_trajectories:
+	path = object_trajectories[key]
+	x_points = list(range(len(path)))
+	y_points = [obj['height'] + obj['width'] for obj in path]
+	plt.scatter(x_points, y_points)
 plt.show()
