@@ -125,10 +125,10 @@ class darkflow_prediction():
         # trainingSet = [self.object_trajectories[i] for i in range(trainingSize)]
         # testSet = [self.object_trajectories[i] for i in range(trainingSize, len(self.object_trajectories))]
 
-        dataX, dataY = self.separateXandY(self.object_trajectories)
+        dataIn, dataOut = self.getXYAll(self.object_trajectories)
         trainX = []
         trainY = []
-        testX = []
+        ''''testX = []
         testY = []
         for i in range(len(dataX)): #length is the number of objects we have in frame, same for both X and Y
             pathX = dataX[i]
@@ -146,18 +146,20 @@ class darkflow_prediction():
         testY = np.array(testY)
         
         trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
-        testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
+        testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))'''
         
        # create and fit the LSTM network
+        print(dataIn)
+        print(dataOut)
         model = Sequential()
-        model.add(LSTM(4, input_shape=(1, look_back)))
-        model.add(Dense(1))
+        model.add(LSTM(200, input_shape=(5, 2)))
+        model.add(Dense(2))
         model.compile(loss='mean_squared_error', optimizer='adam')
-        model.fit(trainX, trainY, epochs=100, batch_size=1, verbose=2)
+        model.fit(dataIn, dataOut, epochs=100, batch_size=1, verbose=2)
 
         # make predictions
-        trainPredict = model.predict(trainX)
-        testPredict = model.predict(testX)
+        trainPredict = model.predict(dataIn)
+        #testPredict = model.predict(testX)
         
         print(trainPredict)       
 
@@ -178,6 +180,22 @@ class darkflow_prediction():
         print(objectDataX)
         print(objectDataY)
         return np.array(objectDataX), np.array(objectDataY)
+
+    def getXYAll(self, object_trajectories):
+        objectData = []
+        objectOutput = []
+        for obj in object_trajectories:
+            data = []
+            for i in range(0, len(object_trajectories[obj])-5):
+                for j in range(i, i+5):
+                    data.append([object_trajectories[obj][j]["x"], object_trajectories[obj][j]["y"]])
+                objectOutput.append([object_trajectories[obj][i+5]["x"], object_trajectories[obj][i+5]["y"]]) # next position after 5 frames
+                objectData.append(data) # append single sample
+        print('objectData', objectData) # [[[x, y], [x, y], [x, y], [x, y], [x, y]]
+                                        # [[x, y], [x, y], [x, y], [x, y], [x, y]]]
+                                        # 1 sample, 5 time steps, 2 features
+        print('objectOutput', objectOutput) # output matches samples [[x, y], [x, y], [x, y], [x, y], [x, y]]
+        return np.array(objectData), np.array(objectOutput)
 
     def hash_object(self, detected_object):
         return str(detected_object["x"]) + str(detected_object["y"]) + str(detected_object["class"]) + str(detected_object["confidence"])
