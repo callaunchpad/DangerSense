@@ -182,29 +182,20 @@ class darkflow_prediction():
         return np.array(objectDataX), np.array(objectDataY)
 
     def getXYAll(self, object_trajectories):
-        #print("OBJECT TRAJECTORIES")
-        #print(object_trajectories)
-        data = []
-        dataOut = []
-        for ob in object_trajectories:
-            #print("OBJECT " + object)
-            l = len(object_trajectories[ob])
-            print(l)
-            for i in range(0, l-5):
-                #print("POINT")
-                #print(point)
-                dataObj = []
-                dataOut1 = []
+        objectData = []
+        objectOutput = []
+        for obj in object_trajectories:
+            data = []
+            for i in range(0, len(object_trajectories[obj])-5):
                 for j in range(i, i+5):
-                    dataObj.append([object_trajectories[ob][j]["x"],object_trajectories[ob][j]["y"]])
-                    print([object_trajectories[ob][j]["x"],object_trajectories[ob][j]["y"]])
-                dataOut1 = [object_trajectories[ob][i+5]["x"],object_trajectories[ob][i+5]["y"]]
-                print([object_trajectories[ob][i+5]["x"],object_trajectories[ob][i+5]["y"]])
-                data.append(dataObj)
-                dataOut.append(dataOut1)
-        print("dataXYAll", np.array(data))
-        print("dataOutXY", np.array(dataOut))
-        return np.array(data), np.array(dataOut)
+                    data.append([object_trajectories[obj][j]["x"], object_trajectories[obj][j]["y"]])
+                objectOutput.append([object_trajectories[obj][i+5]["x"], object_trajectories[obj][i+5]["y"]]) # next position after 5 frames
+                objectData.append(data) # append single sample
+        print('objectData', objectData) # [[[x, y], [x, y], [x, y], [x, y], [x, y]]
+                                        # [[x, y], [x, y], [x, y], [x, y], [x, y]]]
+                                        # 1 sample, 5 time steps, 2 features
+        print('objectOutput', objectOutput) # output matches samples [[x, y], [x, y], [x, y], [x, y], [x, y]]
+        return np.array(objectData), np.array(objectOutput)
 
     def hash_object(self, detected_object):
         return str(detected_object["x"]) + str(detected_object["y"]) + str(detected_object["class"]) + str(detected_object["confidence"])
