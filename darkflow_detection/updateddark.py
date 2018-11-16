@@ -24,6 +24,7 @@ from sklearn.cluster import DBSCAN
 import math
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
+from keras.models import load_model
 
 class darkflow_prediction():
 
@@ -63,7 +64,7 @@ class darkflow_prediction():
             cv2.putText(self.image, str(val[1]), tuple(val[0]), font, 1, (250,250,0), 3)
         cv2.imshow("memes", self.image)
 
-    def video(self, video_file):
+    def video(self, video_file, transfer=None):
         self.video = cv2.VideoCapture(video_file)
         self.images, interm, count = [], [], 1
 
@@ -160,35 +161,41 @@ class darkflow_prediction():
         np.save(video_file.split("/")[-1] + "_train_out", dataOut)
         print(dataIn)
         print(dataOut)
-        model = Sequential()
-        model.add(LSTM(200, input_shape=(5, 2)))
-        model.add(Dense(2))
-        model.compile(loss='mean_squared_error', optimizer='adam')
-        model.fit(dataIn, dataOut, epochs=300, batch_size=1, verbose=2)
+        if transfer:
+            model = load_model(transfer.split("/")[-1])
+        else: 
+            model = Sequential()
+            model.add(LSTM(200, input_shape=(5, 2)))
+            model.add(Dense(2))
+            model.compile(loss='mean_squared_error', optimizer='adam')
+        model.fit(dataIn, dataOut, epochs=20, batch_size=1, verbose=2)
 
         # make predictions
         trainPredict = model.predict(dataIn)
         #testPredict = model.predict(testX)
-        
+        model.save(filename.split("/")[-1]+".h5")
         print(trainPredict)
         print(len(trainPredict))  
     
-    def load_and_train(self, filename):
+    def load_and_train(self, filename, transfer=None):
         dataIn = np.load(filename.split("/")[-1] + "_train_in.npy")
         dataOut = np.load(filename.split("/")[-1] + "_train_out.npy")
         print(dataIn)
         print(dataOut)
-
-        model = Sequential()
-        model.add(LSTM(200, input_shape=(5, 2)))
-        model.add(Dense(2))
-        model.compile(loss='mean_squared_error', optimizer='adam')
-        model.fit(dataIn, dataOut, epochs=300, batch_size=1, verbose=2)
+        if transfer:
+            model = load_model(transfer.split("/")[-1])
+        else: 
+            model = Sequential()
+            model.add(LSTM(200, input_shape=(5, 2)))
+            model.add(Dense(2))
+            model.compile(loss='mean_squared_error', optimizer='adam')
+        model.fit(dataIn, dataOut, epochs=20, batch_size=1, verbose=2)
 
         # make predictions
         trainPredict = model.predict(dataIn)
         #testPredict = model.predict(testX)
-        
+        model.save(filename.split("/")[-1]+".h5")
+        print("SAVED")
         print(trainPredict)
         print(len(trainPredict))  
 
@@ -338,4 +345,4 @@ class darkflow_prediction():
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
 #pred.video("../snippet.mp4")
-pred.load_and_train("../snippet.mp4")
+pred.load_and_train("../snippet.mp4",transfer="../snippet.mp4.h5")
