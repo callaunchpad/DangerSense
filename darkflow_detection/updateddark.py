@@ -80,14 +80,16 @@ class darkflow_prediction():
         self.object_trajectories = {}
 
         try:
+            counter = 0
             while self.video.isOpened():
                 # Read 1 frame of the video (as image), append to our list of images
+                print(counter)
                 ret, frame_image = self.video.read()
                 self.images.append(np.copy(frame_image))
 
                 # Run YOLO to get the detected objects for this particular frame
                 frame_result = self.tfnet.return_predict(frame_image)
-                self.print_box(frame_result, frame_image)
+                #self.print_box(frame_result, frame_image)
                 frame_result = self.refactor_result(frame_result)
                 self.video_results_full.append(frame_result)
                 interm.append(frame_result)
@@ -98,11 +100,12 @@ class darkflow_prediction():
                 if len(interm) == self.FRAME_BUFFER:
                     self.video_results_split.append(interm[:])
                     grand_boxes = self.get_clusters(self.video_results_split[-1])
-                    self.print_grand_box(grand_boxes)
+                    #self.print_grand_box(grand_boxes)
                     self.group_grand_boxes.append(grand_boxes)
                     if len(self.group_grand_boxes) >= 2:
                         self.track_objects_between_frames(self.group_grand_boxes[-2], self.group_grand_boxes[-1])
                 count += 1
+                counter+=1
                 cv2.waitKey(1)
         except AssertionError:
             pass
@@ -110,17 +113,20 @@ class darkflow_prediction():
         print(self.group_grand_boxes)
         for group in self.group_grand_boxes:
             for obj in group:
-                if "prev" not in obj:
+                if "prev" not in obj.keys():
                     self.object_trajectories[self.hash_object(obj)] = [obj]
                 else:
-                    self.object_trajectories[obj['prev']].append(obj)
-                    self.object_trajectories[self.hash_object(obj)] = self.object_trajectories[obj['prev']]
-                    self.object_trajectories[obj['prev']] = None
+                    try:
+                        self.object_trajectories[obj['prev']].append(obj)
+                        self.object_trajectories[self.hash_object(obj)] = self.object_trajectories[obj['prev']]
+                        self.object_trajectories[obj['prev']] = None
+                    except:
+                        continue
         self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if v is not None}
         for i in self.object_trajectories:
             print("\n\n")
             print(self.object_trajectories[i])
-
+ 
         # trainingSize = int(round(0.75 * len(self.object_trajectories)))
         # trainingSet = [self.object_trajectories[i] for i in range(trainingSize)]
         # testSet = [self.object_trajectories[i] for i in range(trainingSize, len(self.object_trajectories))]
@@ -149,19 +155,43 @@ class darkflow_prediction():
         testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))'''
         
        # create and fit the LSTM network
+
+        np.save(video_file.split("/")[-1] + "_train_in", dataIn)
+        np.save(video_file.split("/")[-1] + "_train_out", dataOut)
         print(dataIn)
         print(dataOut)
         model = Sequential()
         model.add(LSTM(200, input_shape=(5, 2)))
         model.add(Dense(2))
         model.compile(loss='mean_squared_error', optimizer='adam')
-        model.fit(dataIn, dataOut, epochs=100, batch_size=1, verbose=2)
+        model.fit(dataIn, dataOut, epochs=300, batch_size=1, verbose=2)
 
         # make predictions
         trainPredict = model.predict(dataIn)
         #testPredict = model.predict(testX)
         
-        print(trainPredict)       
+        print(trainPredict)
+        print(len(trainPredict))  
+    
+    def load_and_train(self, filename):
+        dataIn = np.load(filename.split("/")[-1] + "_train_in.npy")
+        dataOut = np.load(filename.split("/")[-1] + "_train_out.npy")
+        print(dataIn)
+        print(dataOut)
+
+        model = Sequential()
+        model.add(LSTM(200, input_shape=(5, 2)))
+        model.add(Dense(2))
+        model.compile(loss='mean_squared_error', optimizer='adam')
+        model.fit(dataIn, dataOut, epochs=300, batch_size=1, verbose=2)
+
+        # make predictions
+        trainPredict = model.predict(dataIn)
+        #testPredict = model.predict(testX)
+        
+        print(trainPredict)
+        print(len(trainPredict))  
+
 
     def separateXandY(self, object_trajectories):
         #print("OBJECT TRAJECTORIES")
@@ -230,6 +260,8 @@ class darkflow_prediction():
         for frame in group: #each frame object is 5 video frames
             for object_det in frame:
                 cluster_points.append([object_det['x'], object_det['y']]) #extracts the coordinates of each object
+        if cluster_points == []:
+            return []
         model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
         clusters = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
         clustered_points = {}
@@ -305,4 +337,5 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../cars_video_min.mp4")
+#pred.video("../snippet.mp4")
+pred.load_and_train("../snippet.mp4")
