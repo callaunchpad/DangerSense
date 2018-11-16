@@ -296,4 +296,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../cars_video_min.mp4")
+pred.video("../snippet3.mp4")
