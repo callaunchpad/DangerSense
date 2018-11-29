@@ -13,8 +13,9 @@ from keras.optimizers import RMSprop, Adam, SGD
 from keras.models import clone_model
 from keras.callbacks import EarlyStopping
 import gym
+import rlenv1
 
-env = gym.make('NChain-v0')
+env = gym.make('rlenv1-v0')
 # print(env.reset())
 # print(env.step(1))
 # print(env.step(0))
@@ -101,11 +102,11 @@ def eps_greedy_q_learning_with_table(env, num_episodes=1000):
 
 model = Sequential()
 model.add(InputLayer(batch_input_shape=(1, 5)))
-model.add(Dense(10, activation='sigmoid'))
-model.add(Dense(2, activation='linear'))
+model.add(Dense(10, activation='relu'))
+model.add(Dense(2, activation='relu'))
 model.compile(loss='mse', optimizer='adam', metrics=['mae'])
 
-num_episodes = 10
+num_episodes = 1000
 y = 0.95
 eps = 0.5
 decay_factor = 0.999
@@ -131,4 +132,4 @@ for i in range(num_episodes):
         r_sum += r
     r_avg_list.append(r_sum / 10)
 
-print()
+print(r_avg_list)
