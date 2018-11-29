@@ -20,7 +20,7 @@ class Env(gym.Env):
 	def __init__(self, num_states=4, put_in_danger=0.2):
 		self.num_states = num_states
 		self.put_in_danger = put_in_danger
-		self.state = randint(0, 1)
+		self.state = 0 #randint(0, 1)
 		self.action_space = spaces.Discrete(4)
 		self.observation_space = spaces.Discrete(self.num_states)
 		self.seed()
@@ -59,13 +59,15 @@ class Env(gym.Env):
 			reward, self.state = self.action2changes[self.state]
 		if action == 3:
 			reward, self.state = self.action3changes[self.state]
-		if self.np_random.rand() < self.put_in_danger and self.state != 3:
-			self.state = 2
+		# if self.np_random.rand() < self.put_in_danger and self.state != 3:
+		# 	self.state = 2
+		reward += 100
+		reward /= 10
 		done = (self.state == 3)
 		return self.state, reward, done, {}
 
 	def reset(self):
-		self.state = randint(0, 1)
+		self.state = 0 #randint(0, 1)
 		return self.state
 
 	def render(self, mode='human', close=False):
