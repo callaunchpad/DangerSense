@@ -26,7 +26,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 
 from keras import backend as K
-print(K.tensorflow_backend._get_available_gpus())
+K.tensorflow_backend._get_available_gpus()
 
 class darkflow_prediction():
 
@@ -160,7 +160,7 @@ class darkflow_prediction():
         model = Sequential()
         model.add(LSTM(200, input_shape=(5, 2)))
         model.add(Dense(2))
-        model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.001, decay=0.99))
+        model.compile(loss='mean_squared_error', optimizer='adam')
         model.fit(dataIn, dataOut, epochs=100, batch_size=1, verbose=2)
 
         # make predictions
@@ -311,4 +311,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../cars_video_med.mp4")
+pred.video("../cars_video.mp4")
