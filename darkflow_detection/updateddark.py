@@ -160,7 +160,7 @@ class darkflow_prediction():
         model = Sequential()
         model.add(LSTM(200, input_shape=(5, 2)))
         model.add(Dense(2))
-        model.compile(loss='mean_squared_error', optimizer=Adam(lr=0.001, decay=0.99))
+        model.compile(loss='mean_squared_error', optimizer=Adam(decay=0.0001))
         model.fit(dataIn, dataOut, epochs=100, batch_size=1, verbose=2)
 
         # make predictions
@@ -312,4 +312,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../cars_video_min.mp4")
+pred.video("../dshcm.mp4")
