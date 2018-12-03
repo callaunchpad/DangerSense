@@ -48,7 +48,7 @@ class darkflow_prediction():
             s = str(frame_result[i]['label'] + ": " + str(frame_result[i]['confidence']))
             text_coord = (coordtl[0], coordtl[1]-10)
             cv2.putText(frame_image, s, text_coord, font, 1, (250,250,0))
-        cv2.imshow("memes", frame_image)
+        #cv2.imshow("memes", frame_image)
 
     def print_box_with_clusters(self, asd):
         font = cv2.FONT_HERSHEY_PLAIN
@@ -61,7 +61,7 @@ class darkflow_prediction():
             cv2.putText(self.image, s, text_coord, font, 1, (250,250,0))
         for i, val in enumerate(asd):
             cv2.putText(self.image, str(val[1]), tuple(val[0]), font, 1, (250,250,0), 3)
-        cv2.imshow("memes", self.image)
+        #cv2.imshow("memes", self.image)
 
     def video(self, video_file):
         self.video = cv2.VideoCapture(video_file)
@@ -98,12 +98,14 @@ class darkflow_prediction():
                 if len(interm) == self.FRAME_BUFFER:
                     self.video_results_split.append(interm[:])
                     grand_boxes = self.get_clusters(self.video_results_split[-1])
+                    if not grand_boxes:
+                        continue
                     self.print_grand_box(grand_boxes)
                     self.group_grand_boxes.append(grand_boxes)
                     if len(self.group_grand_boxes) >= 2:
                         self.track_objects_between_frames(self.group_grand_boxes[-2], self.group_grand_boxes[-1])
                 count += 1
-                cv2.waitKey(1)
+                #cv2.waitKey(1)
         except AssertionError:
             pass
 
@@ -113,9 +115,10 @@ class darkflow_prediction():
                 if "prev" not in obj:
                     self.object_trajectories[self.hash_object(obj)] = [obj]
                 else:
+                    print(self.object_trajectories[obj['prev']])
                     self.object_trajectories[obj['prev']].append(obj)
                     self.object_trajectories[self.hash_object(obj)] = self.object_trajectories[obj['prev']]
-                    self.object_trajectories[obj['prev']] = None
+                    #self.object_trajectories[obj['prev']] = None
         self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if v is not None}
         for i in self.object_trajectories:
             print("\n\n")
@@ -149,8 +152,8 @@ class darkflow_prediction():
         testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))'''
         
        # create and fit the LSTM network
-        print(dataIn)
-        print(dataOut)
+        print(dataIn.shape)
+        print(dataOut.shape)
         model = Sequential()
         model.add(LSTM(200, input_shape=(5, 2)))
         model.add(Dense(2))
@@ -184,8 +187,10 @@ class darkflow_prediction():
     def getXYAll(self, object_trajectories):
         objectData = []
         objectOutput = []
+        print("objtraj", object_trajectories)
         for obj in object_trajectories:
             data = []
+            print(len(object_trajectories[obj]))
             for i in range(0, len(object_trajectories[obj])-5):
                 for j in range(i, i+5):
                     data.append([object_trajectories[obj][j]["x"], object_trajectories[obj][j]["y"]])
@@ -221,6 +226,9 @@ class darkflow_prediction():
         for frame in group: #each frame object is 5 video frames
             for object_det in frame:
                 cluster_points.append([object_det['x'], object_det['y']]) #extracts the coordinates of each object
+        print(cluster_points)
+        if cluster_points == []:
+            return None
         model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
         clusters = [(cluster_points[i], model.labels_[i]) for i in range(len(cluster_points))]
         clustered_points = {}
@@ -251,7 +259,8 @@ class darkflow_prediction():
             box = {'x': avgd_x, 'y': avgd_y, 'width': width,
                    'height': height, "class": classif, "confidence": confidence}
             grand_boxes.append(box) #creating a grand box for each object for every 5 frames
-        return grand_boxes
+            print(grand_boxes)
+            return grand_boxes
 
     def print_grand_box(self, grand_boxes):
         x_points = [box['x'] for box in grand_boxes]
@@ -259,8 +268,8 @@ class darkflow_prediction():
         image = self.images[-1].copy()
         for i in range(len(x_points)):
             cv2.circle(image, (int(x_points[i]), int(y_points[i])), 15, (255-int(255*i//len(x_points)),0,int(255*i//len(x_points))), -1)
-        cv2.imshow("centroids", image)
-        cv2.waitKey(2)
+        #cv2.imshow("centroids", image)
+        #cv2.waitKey(2)
 
     def track_objects_between_frames(self, curr_frame, next_frame):
         for grand_object in curr_frame:
@@ -296,4 +305,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../snippet3.mp4")
+pred.video("../cars_video_min.mp4")
