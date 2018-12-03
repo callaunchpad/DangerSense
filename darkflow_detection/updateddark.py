@@ -112,10 +112,10 @@ class darkflow_prediction():
         except AssertionError:
             pass
 
-        print(self.group_grand_boxes)
-        for group in self.group_grand_boxes:
-            for obj in group:
-                if "prev" not in obj:
+        print("GROUP GRAND BOXES: ", self.group_grand_boxes)
+        for group in self.group_grand_boxes: # group is a list with dictionaries
+            for obj in group: # obj is a dictionary
+                if "prev" not in obj: # prev is the string key in the dictionary
                     self.object_trajectories[self.hash_object(obj)] = [obj]
                 else:
                     print(self.object_trajectories[obj['prev']])
@@ -132,8 +132,8 @@ class darkflow_prediction():
         # testSet = [self.object_trajectories[i] for i in range(trainingSize, len(self.object_trajectories))]
 
         dataIn, dataOut = self.getXYAll(self.object_trajectories)
-        trainX = []
-        trainY = []
+        #trainX = []
+        #trainY = []
         ''''testX = []
         testY = []
         for i in range(len(dataX)): #length is the number of objects we have in frame, same for both X and Y
@@ -144,19 +144,19 @@ class darkflow_prediction():
             testX.extend([[pathX[i]] for i in range(trainingSize, len(pathX))])
             [trainY.append(pathY[i]) for i in range(trainingSize)]
             [testY.append(pathY[i]) for i in range(trainingSize, len(pathX))]
-      
+
         look_back = 1
         trainX = np.array(trainX)
         testX = np.array(testX)
         trainY = np.array(trainY)
         testY = np.array(testY)
-        
+
         trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
         testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))'''
-        
+
        # create and fit the LSTM network
-        print(dataIn.shape)
-        print(dataOut.shape)
+        print("DATA IN (OBJECT DATA) SHAPE: ", dataIn.shape)
+        print("DATA OUT (OBJECT OUTPUT) SHAPE: ", dataOut.shape)
         model = Sequential()
         model.add(LSTM(200, input_shape=(5, 2)))
         model.add(Dense(2))
@@ -166,9 +166,10 @@ class darkflow_prediction():
         # make predictions
         trainPredict = model.predict(dataIn)
         #testPredict = model.predict(testX)
-        
-        print(trainPredict)       
 
+        print("TRAIN PREDICT: ", trainPredict)
+
+    """
     def separateXandY(self, object_trajectories):
         #print("OBJECT TRAJECTORIES")
         #print(object_trajectories)
@@ -186,23 +187,23 @@ class darkflow_prediction():
         print(objectDataX)
         print(objectDataY)
         return np.array(objectDataX), np.array(objectDataY)
+    """
 
     def getXYAll(self, object_trajectories):
         objectData = []
         objectOutput = []
-        print("objtraj", object_trajectories)
+        print("OBJECT TRAJECTORIES: ", object_trajectories)
         for obj in object_trajectories:
-            
-            print(len(object_trajectories[obj]))
+            print("LEN OBJECT TRAJ OF OBJ: ", len(object_trajectories[obj]))
             for i in range(0, len(object_trajectories[obj])-5):
                 data = []
                 for j in range(i, i+5):
                     data.append([object_trajectories[obj][j]["x"], object_trajectories[obj][j]["y"]])
                 objectOutput.append([object_trajectories[obj][i+5]["x"], object_trajectories[obj][i+5]["y"]]) # next position after 5 frames
-                objectData.append(data[:]) # append single sample
-        print('objectData', objectData) # [[[x, y], [x, y], [x, y], [x, y], [x, y]]
+                objectData.append(data[:]) # append single sample, data = an instance of 5 time steps
+        print('OBJECT DATA: ', objectData) # [[[x, y], [x, y], [x, y], [x, y], [x, y]],
                                         # [[x, y], [x, y], [x, y], [x, y], [x, y]]]
-
+        print('OBJECT OUTPUT: ', objectOutput) # output = where is the next location
 
         #print('objectOutput', objectOutput) # output matches samples [[x, y], [x, y], [x, y], [x, y], [x, y]]
         return np.array(objectData), np.array(objectOutput)
@@ -311,4 +312,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../cars_video_med.mp4")
+pred.video("../cars_video_min.mp4")
