@@ -112,25 +112,25 @@ class darkflow_prediction():
         except AssertionError:
             pass
 
-        print("GROUP GRAND BOXES: ", self.group_grand_boxes)
+        #print("GROUP GRAND BOXES: ", self.group_grand_boxes)
         for group in self.group_grand_boxes: # group is a list with dictionaries
             for obj in group: # obj is a dictionary
                 if "prev" not in obj: # prev is the string key in the dictionary
                     self.object_trajectories[self.hash_object(obj)] = [obj]
                 else:
-                    print(self.object_trajectories[obj['prev']])
+                    #print(self.object_trajectories[obj['prev']])
                     self.object_trajectories[obj['prev']].append(obj)
                     self.object_trajectories[self.hash_object(obj)] = self.object_trajectories[obj['prev']]
                     #self.object_trajectories[obj['prev']] = None
         self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if v is not None}
         for i in self.object_trajectories:
-            print("\n\n")
-            print(self.object_trajectories[i])
+            pass
+            #print("\n\n")
+            #print(self.object_trajectories[i])
 
         # trainingSize = int(round(0.75 * len(self.object_trajectories)))
         # trainingSet = [self.object_trajectories[i] for i in range(trainingSize)]
         # testSet = [self.object_trajectories[i] for i in range(trainingSize, len(self.object_trajectories))]
-
         dataIn, dataOut = self.getXYAll(self.object_trajectories)
         #trainX = []
         #trainY = []
@@ -161,13 +161,13 @@ class darkflow_prediction():
         model.add(LSTM(200, input_shape=(5, 2)))
         model.add(Dense(2))
         model.compile(loss='mean_squared_error', optimizer=Adam(decay=0.0001))
-        model.fit(dataIn, dataOut, epochs=100, batch_size=1, verbose=2)
-
+        model.fit(dataIn, dataOut, epochs=200, batch_size=1, verbose=2)
+        model.save(video_file[3:])
         # make predictions
         trainPredict = model.predict(dataIn)
         #testPredict = model.predict(testX)
 
-        print("TRAIN PREDICT: ", trainPredict)
+        #print("TRAIN PREDICT: ", trainPredict)
 
     """
     def separateXandY(self, object_trajectories):
@@ -192,18 +192,18 @@ class darkflow_prediction():
     def getXYAll(self, object_trajectories):
         objectData = []
         objectOutput = []
-        print("OBJECT TRAJECTORIES: ", object_trajectories)
+        #print("OBJECT TRAJECTORIES: ", object_trajectories)
         for obj in object_trajectories:
-            print("LEN OBJECT TRAJ OF OBJ: ", len(object_trajectories[obj]))
+            #print("LEN OBJECT TRAJ OF OBJ: ", len(object_trajectories[obj]))
             for i in range(0, len(object_trajectories[obj])-5):
                 data = []
                 for j in range(i, i+5):
                     data.append([object_trajectories[obj][j]["x"], object_trajectories[obj][j]["y"]])
                 objectOutput.append([object_trajectories[obj][i+5]["x"], object_trajectories[obj][i+5]["y"]]) # next position after 5 frames
                 objectData.append(data[:]) # append single sample, data = an instance of 5 time steps
-        print('OBJECT DATA: ', objectData) # [[[x, y], [x, y], [x, y], [x, y], [x, y]],
+        #print('OBJECT DATA: ', objectData) # [[[x, y], [x, y], [x, y], [x, y], [x, y]],
                                         # [[x, y], [x, y], [x, y], [x, y], [x, y]]]
-        print('OBJECT OUTPUT: ', objectOutput) # output = where is the next location
+        #print('OBJECT OUTPUT: ', objectOutput) # output = where is the next location
 
         #print('objectOutput', objectOutput) # output matches samples [[x, y], [x, y], [x, y], [x, y], [x, y]]
         return np.array(objectData), np.array(objectOutput)
@@ -232,7 +232,7 @@ class darkflow_prediction():
         for frame in group: #each frame object is 5 video frames
             for object_det in frame:
                 cluster_points.append([object_det['x'], object_det['y']]) #extracts the coordinates of each object
-        print("cluster_points", cluster_points)
+        #print("cluster_points", cluster_points)
         if cluster_points == []:
             return None
         model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
@@ -242,7 +242,7 @@ class darkflow_prediction():
             if point[1] not in clustered_points:
                 clustered_points[point[1]] = []
             clustered_points[point[1]].append((point[0][0], point[0][1]))
-        print(clustered_points)
+        #print(clustered_points)
         grand_boxes = [] #creating each single grand box
         for cluster_val in clustered_points:
             avgd_x, avgd_y = 0, 0
@@ -266,7 +266,7 @@ class darkflow_prediction():
             box = {'x': avgd_x, 'y': avgd_y, 'width': width,
                    'height': height, "class": classif, "confidence": confidence}
             grand_boxes.append(box) #creating a grand box for each object for every 5 frames
-        print("grand boxes", grand_boxes)
+        #print("grand boxes", grand_boxes)
         return grand_boxes
 
     def print_grand_box(self, grand_boxes):
@@ -312,4 +312,10 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
+pred.video("../snippet2.mp4")
+pred = darkflow_prediction()
+pred.video("../snippet3.mp4")
+pred = darkflow_prediction()
+pred.video("../snippet1.mp4")
+pred = darkflow_prediction()
 pred.video("../dshcm.mp4")
