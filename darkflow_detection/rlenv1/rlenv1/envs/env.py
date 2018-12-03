@@ -91,7 +91,7 @@ class Env(gym.Env):
 			self.state = 2
 		#reward += 100
 		# reward /= 10
-		if prevstate == 2:
+		if self.state == 3:
 			print("previous state:", prevstate)
 			print("going to state:", self.state)
 			print("action:", self.actiondescs[action])
