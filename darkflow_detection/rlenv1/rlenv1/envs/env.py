@@ -45,12 +45,34 @@ class Env(gym.Env):
 			2: [100, 0],
 		}
 
+		# self.action0changes = { # maintain speed
+		# 	0: [10, 0],
+		# 	1: [10, 1],
+		# 	2: [10, 3],
+		# }
+		# self.action1changes = { # decrease speed
+		# 	0: [10, 0],
+		# 	1: [10, 1], # might be 0
+		# 	2: [10, 1],
+		# }
+		# self.action2changes = { # increase speed
+		# 	0: [10, 0],
+		# 	1: [10, 2],
+		# 	2: [10, 3],
+		# }
+		# self.action3changes = { # swerve
+		# 	0: [10, 1],
+		# 	1: [10, 0],
+		# 	2: [10, 0],
+		# }
+
 	def seed(self, seed=None):
 		self.np_random, seed = seeding.np_random(seed)
 		return [seed]
 
 	def step(self, action):
 		assert self.action_space.contains(action)
+		prevstate = self.state
 		if action == 0:
 			reward, self.state = self.action0changes[self.state]
 		if action == 1:
@@ -61,7 +83,10 @@ class Env(gym.Env):
 			reward, self.state = self.action3changes[self.state]
 		# if self.np_random.rand() < self.put_in_danger and self.state != 3:
 		# 	self.state = 2
-		reward += 100
+		#reward += 100
+		if self.state ==2 or self.state ==3:
+			print("previous state:", prevstate)
+			print("going to state:", self.state)
 		reward /= 10
 		done = (self.state == 3)
 		return self.state, reward, done, {}

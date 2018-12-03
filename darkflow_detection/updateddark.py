@@ -189,17 +189,19 @@ class darkflow_prediction():
         objectOutput = []
         print("objtraj", object_trajectories)
         for obj in object_trajectories:
-            data = []
+            
             print(len(object_trajectories[obj]))
             for i in range(0, len(object_trajectories[obj])-5):
+                data = []
                 for j in range(i, i+5):
                     data.append([object_trajectories[obj][j]["x"], object_trajectories[obj][j]["y"]])
                 objectOutput.append([object_trajectories[obj][i+5]["x"], object_trajectories[obj][i+5]["y"]]) # next position after 5 frames
-                objectData.append(data) # append single sample
+                objectData.append(data[:]) # append single sample
         print('objectData', objectData) # [[[x, y], [x, y], [x, y], [x, y], [x, y]]
                                         # [[x, y], [x, y], [x, y], [x, y], [x, y]]]
-                                        # 1 sample, 5 time steps, 2 features
-        print('objectOutput', objectOutput) # output matches samples [[x, y], [x, y], [x, y], [x, y], [x, y]]
+
+
+        #print('objectOutput', objectOutput) # output matches samples [[x, y], [x, y], [x, y], [x, y], [x, y]]
         return np.array(objectData), np.array(objectOutput)
 
     def hash_object(self, detected_object):
@@ -226,7 +228,7 @@ class darkflow_prediction():
         for frame in group: #each frame object is 5 video frames
             for object_det in frame:
                 cluster_points.append([object_det['x'], object_det['y']]) #extracts the coordinates of each object
-        print(cluster_points)
+        print("cluster_points", cluster_points)
         if cluster_points == []:
             return None
         model = DBSCAN(eps=100, min_samples=2).fit(np.array(cluster_points))
@@ -236,6 +238,7 @@ class darkflow_prediction():
             if point[1] not in clustered_points:
                 clustered_points[point[1]] = []
             clustered_points[point[1]].append((point[0][0], point[0][1]))
+        print(clustered_points)
         grand_boxes = [] #creating each single grand box
         for cluster_val in clustered_points:
             avgd_x, avgd_y = 0, 0
@@ -259,8 +262,8 @@ class darkflow_prediction():
             box = {'x': avgd_x, 'y': avgd_y, 'width': width,
                    'height': height, "class": classif, "confidence": confidence}
             grand_boxes.append(box) #creating a grand box for each object for every 5 frames
-            print(grand_boxes)
-            return grand_boxes
+        print("grand boxes", grand_boxes)
+        return grand_boxes
 
     def print_grand_box(self, grand_boxes):
         x_points = [box['x'] for box in grand_boxes]
@@ -305,4 +308,4 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../cars_video_min.mp4")
+pred.video("../cars_video_med.mp4")

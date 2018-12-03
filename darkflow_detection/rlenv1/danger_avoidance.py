@@ -112,13 +112,13 @@ model.add(Dense(512, activation='relu', input_shape=(4,)))
 # model.add(Dropout(0.2))
 model.add(Dense(512, activation='relu'))
 model.add(Dense(4, activation='softmax'))
-model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.0001), metrics=['mae'])
+model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.001), metrics=['mae'])
 model.summary()
 
 env = gym.make('rlenv1-v0')
 num_episodes = 200
 y = 0.95
-eps = 0.5
+eps = 0.001
 decay_factor = 0.999
 r_avg_list = []
 for i in range(num_episodes):
@@ -129,22 +129,26 @@ for i in range(num_episodes):
     done = False
     r_sum = 0
     count = 0
-    while not done and count <= 1000:
+    while not done:
         if np.random.random() < eps:
             a = np.random.randint(0, 4)
         else:
             a = np.argmax(model.predict(np.identity(4)[s:s + 1]))
         new_s, r, done, _ = env.step(a)
+        if done:
+            break
         target = r + y * np.max(model.predict(np.identity(4)[s:s + 1])) #new_s
         target_vec = model.predict(np.identity(4)[s:s + 1])[0]
         # print(target_vec)
         target_vec[a] = target
         # print(target_vec)
-        model.fit(np.identity(4)[s:s + 1], target_vec.reshape(-1, 4), epochs=4, verbose=0)
+        
+        model.fit(np.identity(4)[s:s + 1], target_vec.reshape(-1, 4), epochs=1, verbose=0)
+        
         s = new_s
         r_sum += r
         count += 1
-    print(count)
+    print(r_sum)
     r_avg_list.append(r_sum)
 
 # print(r_avg_list)
