@@ -27,7 +27,7 @@ class Env(gym.Env):
 		self.action0changes = { # maintain speed
 			0: [100, 0],
 			1: [50, 1],
-			2: [-2000, 3],
+			2: [-20000, 3],
 		}
 		self.action1changes = { # decrease speed
 			0: [-50, 0],
@@ -37,7 +37,7 @@ class Env(gym.Env):
 		self.action2changes = { # increase speed
 			0: [30, 0],
 			1: [-50, 2],
-			2: [-2000, 3],
+			2: [-20000, 3],
 		}
 		self.action3changes = { # swerve
 			0: [-100, 1],
