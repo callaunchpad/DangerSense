@@ -129,26 +129,25 @@ for i in range(num_episodes):
     done = False
     r_sum = 0
     count = 0
-    while not done:
+    while not done and count <= 10000:
         if np.random.random() < eps:
             a = np.random.randint(0, 4)
         else:
             a = np.argmax(model.predict(np.identity(4)[s:s + 1]))
         new_s, r, done, _ = env.step(a)
-        if done:
-            break
+        # if done:
+        #     break
         target = r + y * np.max(model.predict(np.identity(4)[s:s + 1])) #new_s
         target_vec = model.predict(np.identity(4)[s:s + 1])[0]
         # print(target_vec)
         target_vec[a] = target
         # print(target_vec)
-        
         model.fit(np.identity(4)[s:s + 1], target_vec.reshape(-1, 4), epochs=1, verbose=0)
-        
         s = new_s
         r_sum += r
         count += 1
     print(r_sum)
+    print(count)
     r_avg_list.append(r_sum)
 
 # print(r_avg_list)
