@@ -157,11 +157,16 @@ class darkflow_prediction():
        # create and fit the LSTM network
         print("DATA IN (OBJECT DATA) SHAPE: ", dataIn.shape)
         print("DATA OUT (OBJECT OUTPUT) SHAPE: ", dataOut.shape)
+        print("Model save name: ", video_file[3:])
         model = Sequential()
         model.add(LSTM(200, input_shape=(5, 2)))
         model.add(Dense(2))
         model.compile(loss='mean_squared_error', optimizer=Adam(decay=0.0001))
-        model.fit(dataIn, dataOut, epochs=200, batch_size=1, verbose=2)
+        try:
+          model.fit(dataIn, dataOut, epochs=200, batch_size=1, verbose=2)
+        except:
+          print("ERROR IN PROCESSING VID")
+          return
         model.save(video_file[3:])
         # make predictions
         trainPredict = model.predict(dataIn)
@@ -312,10 +317,10 @@ class darkflow_prediction():
 
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
-pred.video("../snippet2.mp4")
-pred = darkflow_prediction()
-pred.video("../snippet3.mp4")
-pred = darkflow_prediction()
-pred.video("../snippet1.mp4")
-pred = darkflow_prediction()
-pred.video("../dshcm.mp4")
+#pred.video("../snippet2.mp4")
+#pred = darkflow_prediction()
+#pred.video("../snippet3.mp4")
+#pred = darkflow_prediction()
+pred.video("../snippet.mp4")
+#pred = darkflow_prediction()
+#pred.video("../dshcm.mp4")
