@@ -15,144 +15,70 @@ from keras.callbacks import EarlyStopping
 import gym
 import rlenv1
 
-# print(env.reset())
-# print(env.step(1))
-# print(env.step(0))
-
-# Reward matrix:
-# State 1: dot outside
-# 	Stay: +100
-# 	Move down: -50
-# 	Move left: -100
-# 	Move right: -100
-# State 2: dot inside, not big enough
-# 	Stay: -100
-# 	Move down: +100
-# 	Move left: +20
-# 	Move right: +20
-# State 3: dot inside, big (accident about to happen)
-# 	Stay: -100
-# 	Move down: +50
-# 	Move left: +100
-# 	Move right: +100
-
-
-# def naive_sum_reward_agent(env, num_episodes=1000):
-# 	# this is the table that will hold our summated rewards for
-# 	# each action in each state
-# 	r_table = np.zeros((5, 2))
-# 	for g in range(num_episodes):
-# 		s = env.reset()
-# 		done = False
-# 		while not done:
-# 			if np.sum(r_table[s, :]) == 0:
-# 				# make a random selection of actions
-# 				a = np.random.randint(0, 2)
-# 			else:
-# 				# select the action with highest cummulative reward
-# 				a = np.argmax(r_table[s, :])
-# 			new_s, r, done, _ = env.step(a)
-# 			r_table[s, a] += r
-# 			s = new_s
-# 	return r_table
-
-# def q_learning_with_table(env, num_episodes=1000):
-# 	q_table = np.zeros((5, 2))
-# 	y = 0.95
-# 	lr = 0.8
-# 	for i in range(num_episodes):
-# 		s = env.reset()
-# 		done = False
-# 		while not done:
-# 			if np.sum(q_table[s,:]) == 0:
-# 				# make a random selection of actions
-# 				a = np.random.randint(0, 2)
-# 			else:
-# 				# select the action with largest q value in state s
-# 				a = np.argmax(q_table[s, :])
-# 			new_s, r, done, _ = env.step(a)
-# 			q_table[s, a] += r + lr*(y*np.max(q_table[new_s, :]) - q_table[s, a])
-# 			s = new_s
-# 	return q_table
-
-# def eps_greedy_q_learning_with_table(env, num_episodes=1000):
-# 	q_table = np.zeros((5, 2))
-# 	y = 0.95
-# 	eps = 0.5
-# 	lr = 0.8
-# 	decay_factor = 0.999
-# 	for i in range(num_episodes):
-# 		s = env.reset()
-# 		eps *= decay_factor
-# 		done = False
-# 		while not done:
-# 			# select the action with highest cummulative reward
-# 			if np.random.random() < eps or np.sum(q_table[s, :]) == 0:
-# 				a = np.random.randint(0, 2)
-# 			else:
-# 				a = np.argmax(q_table[s, :])
-# 			# pdb.set_trace()
-# 			new_s, r, done, _ = env.step(a)
-# 			q_table[s, a] += r + lr * (y * np.max(q_table[new_s, :]) - q_table[s, a])
-# 			s = new_s
-# 	return q_table
-
-# # print(eps_greedy_q_learning_with_table(env))
-
-# model = Sequential()
-# # model.add(InputLayer(batch_input_shape=(1, 4)))
-# model.add(Dense(16, activation='relu', input_shape=(4,)))
-# model.add(Dense(16, activation='relu'))
-# model.add(Dense(4, activation='softmax'))
-# model.compile(loss='mse', optimizer='adam', metrics=['mae'])
-# model.summary()
-
 #def make_rl():
+
+# Define model
+num_states = 5
+num_actions = 4
 model = Sequential()
-model.add(Dense(512, activation='relu', input_shape=(4,)))
-# model.add(Dropout(0.2))
-model.add(Dense(512, activation='relu'))
-model.add(Dense(4, activation='softmax'))
+model.add(Dense(64, activation='relu', input_shape=(num_states,)))
+model.add(Dense(64, activation='relu'))
+model.add(Dense(num_actions, activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.001), metrics=['mae'])
 model.summary()
 
+# Train the model
 env = gym.make('rlenv1-v0')
-num_episodes = 200
+num_episodes = 30 #200
 y = 0.95
-eps = 0.001
-decay_factor = 0.999
-r_avg_list = []
+eps = 0.6
+decay_factor = 0.6
+r_avg_list, num_crashes_list = [], []
 for i in range(num_episodes):
     s = env.reset()
     eps *= decay_factor
-    if i % 1 == 0:
-        print("Episode {} of {}".format(i + 1, num_episodes))
-    done = False
-    r_sum = 0
-    count = 0
-    while not done and count <= 10000:
+    print("Episode {} of {}".format(i + 1, num_episodes))
+    done, r_sum, count, num_crashes = False, 0, 0, 0
+    while not done:
         if np.random.random() < eps:
-            a = np.random.randint(0, 4)
+            a = np.random.randint(0, num_actions)
         else:
-            a = np.argmax(model.predict(np.identity(4)[s:s + 1]))
-        new_s, r, done, _ = env.step(a)
-        # if done:
-        #     break
-        target = r + y * np.max(model.predict(np.identity(4)[s:s + 1])) #new_s
-        target_vec = model.predict(np.identity(4)[s:s + 1])[0]
-        # print(target_vec)
+            a = np.argmax(model.predict(np.identity(num_states)[s:s + 1]))
+        new_s, r, done, _ = env.step(a, count)
+        if new_s == num_states-1:
+            num_crashes += 1
+        target = r + y * np.max(model.predict(np.identity(num_states)[s:s + 1])) #new_s
+        target_vec = model.predict(np.identity(num_states)[s:s + 1])[0]
         target_vec[a] = target
-        # print(target_vec)
-        model.fit(np.identity(4)[s:s + 1], target_vec.reshape(-1, 4), epochs=1, verbose=0)
+        model.fit(np.identity(num_states)[s:s + 1], target_vec.reshape(-1, num_actions), epochs=2, verbose=0)
         s = new_s
         r_sum += r
         count += 1
-    print(r_sum)
-    print(count)
+    print("reward:", r_sum)
+    print("crashes:", num_crashes)
     r_avg_list.append(r_sum)
+    num_crashes_list.append(num_crashes)
 
-# print(r_avg_list)
-plt.plot(r_avg_list)
+# Save model to file
+model_json = model.to_json()
+with open("rlmodel.json", "w") as json_file:
+    json_file.write(model_json)
+model.save_weights("rlmodel.h5")
+
+# Plot results
+fig, ax1 = plt.subplots()
+t = range(1, num_episodes+1)
+s1 = r_avg_list
+ax1.plot(t, s1,'b')
+ax1.set_xlabel('training episodes')
+ax1.set_ylabel('cumulative attained reward', color='b')
+ax1.tick_params('y', colors='b')
+ax2 = ax1.twinx()
+s2 = num_crashes_list
+ax2.plot(t, s2, 'r')
+ax2.set_ylabel('number of crashes', color='r')
+ax2.tick_params('y', colors='r')
+fig.tight_layout()
 plt.show()
 
 return env
