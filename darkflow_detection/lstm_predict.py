@@ -45,28 +45,29 @@ def getXYAll(object_trajectories):
 	# print('objectOutput', objectOutput) # output matches samples [[x, y], [x, y], [x, y], [x, y], [x, y]]
 	return np.array(totalData[0]), np.array(totalOutput[0])
 
-with open('object_trajectories.pickle', 'rb') as handle:
-	object_trajectories = pickle.load(handle)
+def predict():
+	with open('object_trajectories.pickle', 'rb') as handle:
+		object_trajectories = pickle.load(handle)
 
-dataIn, dataOut = getXYAll(object_trajectories)
-print(dataIn.shape)
-print(dataOut.shape)
-model = Sequential()
-model.add(LSTM(200, input_shape=(5, 2)))
-model.add(Dense(2))
-model.compile(loss='mean_squared_error', optimizer='adam')
-model.fit(dataIn, dataOut, epochs=100, batch_size=1, verbose=2)
+	dataIn, dataOut = getXYAll(object_trajectories)
+	print(dataIn.shape)
+	print(dataOut.shape)
+	model = Sequential()
+	model.add(LSTM(200, input_shape=(5, 2)))
+	model.add(Dense(2))
+	model.compile(loss='mean_squared_error', optimizer='adam')
+	model.fit(dataIn, dataOut, epochs=100, batch_size=1, verbose=2)
 
-trainPredict = model.predict(dataIn)
+	trainPredict = model.predict(dataIn)
 
-cap = cv2.VideoCapture("../snippet3.mp4")
-cap.set(1, cap.get(7)-50)
-ret, img = cap.read()
-cap.release()
+	cap = cv2.VideoCapture("../snippet3.mp4")
+	cap.set(1, cap.get(7)-50)
+	ret, img = cap.read()
+	cap.release()
 
-plt.scatter(dataOut[:,0], dataOut[:,1])
-plt.imshow(img)
-plt.show()
-plt.scatter(trainPredict[:,0], trainPredict[:,1])
-plt.imshow(img)
-plt.show()
+	plt.scatter(dataOut[:,0], dataOut[:,1])
+	plt.imshow(img)
+	plt.show()
+	plt.scatter(trainPredict[:,0], trainPredict[:,1])
+	plt.imshow(img)
+	plt.show()

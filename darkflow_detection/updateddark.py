@@ -315,6 +315,7 @@ class darkflow_prediction():
         except AssertionError:
             pass
 
+#if __name__ == '__main__':
 pred = darkflow_prediction()
 # pred.image("../cars2.jpg")
 #pred.video("../snippet2.mp4")

@@ -107,6 +107,7 @@ import rlenv1
 # model.compile(loss='mse', optimizer='adam', metrics=['mae'])
 # model.summary()
 
+#def make_rl():
 model = Sequential()
 model.add(Dense(512, activation='relu', input_shape=(4,)))
 # model.add(Dropout(0.2))
@@ -153,3 +154,5 @@ for i in range(num_episodes):
 # print(r_avg_list)
 plt.plot(r_avg_list)
 plt.show()
+
+return env
