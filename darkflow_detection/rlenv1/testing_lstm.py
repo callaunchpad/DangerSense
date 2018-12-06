@@ -33,20 +33,21 @@ class testRL_LSTM():
 		# Load trained LSTM model from file 
 		self.lstm_model = load_model("snippet.mp4.h5")
 
-		self.centerX = 1000 # TODO: Should be passed in by the video
-		self.crash_area = 30
-		self.swerve_area = 60
-		self.slow_area = 90
-		self.mantain_area = 120
+		self.centerX = 600 # TODO: Should be passed in by the video
+		self.crash_area = 85000
+		self.swerve_area = 75000
+		self.slow_area = 53000
+		self.mantain_area = 40000
 
 	def compute_state(self, centroid, bounding_box):
 		# Define our actual state here: 
 		centroid = self.model.predict(centroid)
 		new_box = self.lstm_model.predict(bounding_box)
+		width = new_box[0]
 		area = new_box[0] * new_box[1]
 		x = centroid[0]
-		
-		if math.abs(x - self.centerX) < 100: # naively just look at the x location being similar to the middle, compare area for closeness
+		xOffset = math.abs(x - self.centerX)
+		if (width > 250 and xOffset < 100) or (width > 200 and xOffset < 30) or (xOffset < 10): # naively just look at the x location being similar to the middle, compare area for closeness
 			if area > self.crash_area: 
 				self.state = 4 # car crash
 			elif area > self.swerve_area: 
