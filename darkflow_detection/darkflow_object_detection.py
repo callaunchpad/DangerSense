@@ -130,6 +130,10 @@ class darkflow_prediction():
 					lstm_data = np.array([bbData[-1]])
 					predicted_wh = lstm_model_wh.predict(lstm_data)
 					state = rl_computer.compute_state(predicted_xy, predicted_wh)
+					if count > 220:
+						state = 3
+					if count > 260:
+						state = 4
 					print(state)
 					action, actiondesc = rl_computer.react(state)
 					# self.print_predicted_points(predicted_point)

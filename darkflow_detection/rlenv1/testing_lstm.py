@@ -38,10 +38,10 @@ class testRL_LSTM():
 		# self.swerve_area = 75000
 		# self.slow_area = 53000
 		# self.mantain_area = 40000
-		self.crash_area = 60000
+		self.crash_area = 80000
 		self.swerve_area = 50000
-		self.slow_area = 40000
-		self.mantain_area = 30000
+		self.slow_area = 30000
+		self.mantain_area = 20000
 
 	def compute_state(self, centroid, bounding_box):
 		# Define our actual state here:
@@ -53,7 +53,9 @@ class testRL_LSTM():
 		x = centroid[0][0]
 		y = centroid[0][1]
 		xOffset = abs(x - self.centerX)
-		if (width > 250 and xOffset < 100) or (width > 200 and xOffset < 30) or (xOffset < 10): # naively just look at the x location being similar to the middle, compare area for closeness
+		print(bounding_box)
+		print(xOffset)
+		if (xOffset < 120):# or (width > 200 and xOffset < 30) or (xOffset < 10): # naively just look at the x location being similar to the middle, compare area for closeness
 			if area > self.crash_area: 
 				self.state = 4 # car crash
 			elif area > self.swerve_area: 
@@ -72,4 +74,5 @@ class testRL_LSTM():
 			print("Action:", self.actiondescs[action])
 		else:
 			print("Crash")
+			return (action, "crash")
 		return action, self.actiondescs[action]
