@@ -28,30 +28,37 @@ class testRL_LSTM():
 			0: "maintain speed",
 			1: "decrease speed",
 			2: "increase speed",
-			3: "swerve",
+			3: "swerve"}
+		# Load trained LSTM model from file 
+		self.lstm_model = load_model("snippet.mp4.h5")
+		
+		self.centerX = 1000 # TODO: Should be passed in by the video
+        self.crash_area = 30
+        self.swerve_area = 60
+        self.slow_area = 90
+        self.mantain_area = 120 
 		}		
 
 	def compute_state(self, centroid, bounding_box):
 		# Define our actual state here: 
-        for location in next_locations: # list of locations of cars (x,y) in the next time frame
-            x = location[0]
-            y = location[1]
-            # TODO: Velocity is relative based on the car in front of it? Not going to work (Ask Olivia for equations)...
-            if math.abs(x - self.centerX) < 100: # naively just look at the x location being similar to the middle, compare y
-                if y < self.crash_dist and self.state < 4: 
-                    self.state = 4 # car crash
-                elif y < self.swerve_dist and self.state < 3: 
-                    self.state = 3 # swerve
-                elif y < self.slow_dist and self.state < 2: 
-                    self.state = 2 # slow
-                else: 
-                    if self.state < 1:
-                        self.state = 1 # maintain
-            else: 
-                self.state = 0 # car not in lane
+		centroid = self.model.predict(centroid)
+		new_box = self.lstm_model.predict(bounding_box)
+		area = new_box[0] * new_box[1]
+		x = centroid[0]
+		
+		if math.abs(x - self.centerX) < 100: # naively just look at the x location being similar to the middle, compare area for closeness
+			if area > self.crash_area: 
+				self.state = 4 # car crash
+			elif area > self.swerve_area: 
+				self.state = 3 # swerve
+			elif area < self.slow_area: 
+				self.state = 2 # slow
+			else: 
+				self.state = 1 # maintain
+		else: 
+			self.state = 0 # car not in lane
 
 	def react(self, state):
 		action = np.argmax(self.model.predict(np.identity(5)[state:state + 1]))
 		print("Action:", self.actiondescs[action])
 		return action
-		
