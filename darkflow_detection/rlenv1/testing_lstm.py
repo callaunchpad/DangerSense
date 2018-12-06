@@ -19,11 +19,11 @@ class testRL_LSTM():
 
 	def __init__(self):
 		# Load trained RL model from file
-		json_file = open('rlmodel.json', 'r')
+		json_file = open('rlenv1/rlmodel.json', 'r')
 		model_json = json_file.read()
 		json_file.close()
 		self.model = model_from_json(model_json)
-		self.model.load_weights("rlmodel.h5")
+		self.model.load_weights("rlenv1/rlmodel.h5")
 		self.actiondescs = {
 			0: "maintain speed",
 			1: "decrease speed",
@@ -31,22 +31,28 @@ class testRL_LSTM():
 			3: "swerve"}
 
 		# Load trained LSTM model from file 
-		self.lstm_model = load_model("snippet.mp4.h5")
+		# self.lstm_model = load_model("snippet.mp4.h5")
 
 		self.centerX = 600 # TODO: Should be passed in by the video
-		self.crash_area = 85000
-		self.swerve_area = 75000
-		self.slow_area = 53000
-		self.mantain_area = 40000
+		# self.crash_area = 85000
+		# self.swerve_area = 75000
+		# self.slow_area = 53000
+		# self.mantain_area = 40000
+		self.crash_area = 60000
+		self.swerve_area = 50000
+		self.slow_area = 40000
+		self.mantain_area = 30000
 
 	def compute_state(self, centroid, bounding_box):
-		# Define our actual state here: 
-		centroid = self.model.predict(centroid)
-		new_box = self.lstm_model.predict(bounding_box)
-		width = new_box[0]
-		area = new_box[0] * new_box[1]
-		x = centroid[0]
-		xOffset = math.abs(x - self.centerX)
+		# Define our actual state here:
+		# centroid = self.model.predict(centroid)
+		# new_box = self.lstm_model.predict(bounding_box)
+		width = bounding_box[0][0]
+		height = bounding_box[0][1]
+		area = bounding_box[0][0] * bounding_box[0][1]
+		x = centroid[0][0]
+		y = centroid[0][1]
+		xOffset = abs(x - self.centerX)
 		if (width > 250 and xOffset < 100) or (width > 200 and xOffset < 30) or (xOffset < 10): # naively just look at the x location being similar to the middle, compare area for closeness
 			if area > self.crash_area: 
 				self.state = 4 # car crash
@@ -58,8 +64,12 @@ class testRL_LSTM():
 				self.state = 1 # maintain
 		else: 
 			self.state = 0 # car not in lane
+		return self.state
 
 	def react(self, state):
 		action = np.argmax(self.model.predict(np.identity(5)[state:state + 1]))
-		print("Action:", self.actiondescs[action])
-		return action
+		if state != 4:
+			print("Action:", self.actiondescs[action])
+		else:
+			print("Crash")
+		return action, self.actiondescs[action]

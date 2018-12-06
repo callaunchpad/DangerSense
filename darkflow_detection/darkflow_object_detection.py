@@ -14,12 +14,13 @@ from keras.datasets import mnist, cifar10
 from keras.models import Sequential, load_model, Model
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.optimizers import RMSprop, Adam, SGD
-from keras.models import clone_model
+from keras.models import clone_model, load_model
 from keras.callbacks import EarlyStopping
 from darkflow.net.build import TFNet
 import re
 from sklearn.cluster import DBSCAN
 import pickle
+from rlenv1.testing_lstm import testRL_LSTM
 
 class darkflow_prediction():
 
@@ -77,6 +78,11 @@ class darkflow_prediction():
 		# Actual trajectories of objects through frames
 		self.object_trajectories = {}
 
+		# Initialize the LSTM model
+		lstm_model_xy = load_model('lstm_snippet3_model.h5')
+		lstm_model_wh = load_model('lstm_snippet3_model_wh.h5')
+		rl_computer = testRL_LSTM()
+
 		try:
 			while self.video.isOpened():
 				# Read 1 frame of the video (as image), append to our list of images
@@ -96,10 +102,9 @@ class darkflow_prediction():
 					interm.pop(0)
 				if len(interm) == self.FRAME_BUFFER:
 					self.video_results_split.append(interm[:])
-					print(interm)
-					print(self.video_results_split[-1])
+					# print(interm)
+					# print(self.video_results_split[-1])
 					grand_boxes = self.get_clusters(self.video_results_split[-1])
-					self.print_grand_box(grand_boxes)
 					self.group_grand_boxes.append(grand_boxes)
 					if len(self.group_grand_boxes) >= 2:
 						self.track_objects_between_frames(self.group_grand_boxes[-2], self.group_grand_boxes[-1])
@@ -111,17 +116,48 @@ class darkflow_prediction():
 							self.object_trajectories[self.hash_object(obj)] = [elem for elem in self.object_trajectories[obj['prev']] if elem != ["purge"]]
 							self.object_trajectories[obj['prev']].append(["purge"])
 
+				# Use LSTM to predict the next frame's points
+				max_trajectory = []
+				for obj in self.object_trajectories:
+					if len(self.object_trajectories[obj]) > 5 \
+					and len(self.object_trajectories[obj]) > len(max_trajectory) \
+					and ["purge"] not in self.object_trajectories[obj]:
+						max_trajectory = self.object_trajectories[obj]
+				if max_trajectory:
+					xyData, bbData = self.get_LSTM_data(max_trajectory)
+					lstm_data = np.array([xyData[-1]])
+					predicted_xy = lstm_model_xy.predict(lstm_data)
+					lstm_data = np.array([bbData[-1]])
+					predicted_wh = lstm_model_wh.predict(lstm_data)
+					state = rl_computer.compute_state(predicted_xy, predicted_wh)
+					print(state)
+					action, actiondesc = rl_computer.react(state)
+					# self.print_predicted_points(predicted_point)
+
+				if len(interm) == self.FRAME_BUFFER and max_trajectory:
+					self.print_grand_box(grand_boxes, state, actiondesc)
+
 				count += 1
 				cv2.waitKey(1)
 		except AssertionError:
 			pass
 
 		self.object_trajectories = {k: v for k, v in self.object_trajectories.items() if ["purge"] not in v}
-		print(self.object_trajectories)
 		with open('object_trajectories.pickle', 'wb') as handle:
 			pickle.dump(self.object_trajectories, handle, protocol=pickle.HIGHEST_PROTOCOL)
 		with open('last_image.pickle', 'wb') as handle:
 			pickle.dump(self.images[-1], handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+	def get_LSTM_data(self, trajectory):
+		xyData, bbData = [], []
+		for i in range(0, len(trajectory)-5):
+			data1, data2 = [], []
+			for j in range(i, i+5):
+				data1.append([trajectory[j]["x"], trajectory[j]["y"]])
+				data2.append([trajectory[j]["width"], trajectory[j]["height"]])
+			xyData.append(data1[:])
+			bbData.append(data2[:])
+		return np.array(xyData), np.array(bbData)
 
 	def hash_object(self, detected_object):
 		return str(detected_object["x"]) + str(detected_object["y"]) + str(detected_object["class"]) + str(detected_object["confidence"])
@@ -180,13 +216,24 @@ class darkflow_prediction():
 			grand_boxes.append(box) #creating a grand box for each object for every 5 frames
 		return grand_boxes
 
-	def print_grand_box(self, grand_boxes):
+	def print_grand_box(self, grand_boxes, state, actiondesc):
 		x_points = [box['x'] for box in grand_boxes]
 		y_points = [box['y'] for box in grand_boxes]
 		image = self.images[-1].copy()
 		for i in range(len(x_points)):
 			cv2.circle(image, (int(x_points[i]), int(y_points[i])), 15, (255-int(255*i//len(x_points)),0,int(255*i//len(x_points))), -1)
+		font = cv2.FONT_HERSHEY_PLAIN
+		cv2.putText(image, "State: " + str(state), (10, 40), font, 3, (0, 0, 0))
+		cv2.putText(image, "Action: " + str(actiondesc), (10, 70), font, 3, (0, 0, 0))
 		cv2.imshow("centroids", image)
+		cv2.waitKey(2)
+
+	def print_predicted_points(self, points):
+		x_point = points[0][0]
+		y_point = points[0][1]
+		image = self.images[-1].copy()
+		cv2.circle(image, (int(x_point), int(y_point)), 15, 255, -1)
+		cv2.imshow("predicted centroids", image)
 		cv2.waitKey(2)
 
 	def track_objects_between_frames(self, curr_frame, next_frame):

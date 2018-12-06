@@ -30,6 +30,6 @@ object_paths = []
 for key in object_trajectories:
 	path = object_trajectories[key]
 	x_points = list(range(len(path)))
-	y_points = [obj['height'] + obj['width'] for obj in path]
+	y_points = [obj['height'] * obj['width'] for obj in path]
 	plt.scatter(x_points, y_points)
 plt.show()
