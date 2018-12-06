@@ -15,8 +15,6 @@ from keras.callbacks import EarlyStopping
 import gym
 import rlenv1
 
-#def make_rl():
-
 # Define model
 num_states = 5
 num_actions = 4
@@ -80,5 +78,3 @@ ax2.set_ylabel('number of crashes', color='r')
 ax2.tick_params('y', colors='r')
 fig.tight_layout()
 plt.show()
-
-return env
